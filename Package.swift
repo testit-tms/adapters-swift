@@ -27,7 +27,6 @@ let package = Package(
         .target(
             name: "testit-adapters-swift",
             dependencies: [
-                "AnyCodable", 
                 .product(name: "api-client-swift", package: "api-client-swift")
             ],
             path: "Sources"
