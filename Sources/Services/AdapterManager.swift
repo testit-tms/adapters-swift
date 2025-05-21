@@ -63,26 +63,6 @@ class AdapterManager {
         Self.logger.debug("Initialized AdapterManager using default client, storage, context, writer.")
     }
     
-    // Convenience Initializer (matching Kotlin constructor with defaults for ApiClient)
-    convenience init(clientConfiguration: ClientConfiguration, adapterConfig: AdapterConfig) {
-        print("run AdapterManager.init(clientConfiguration: ClientConfiguration, adapterConfig: AdapterConfig)...")
-        let defaultClient = TmsApiClient(configuration: clientConfiguration)
-         print("getResultStorage call...")
-         let defaultStorage = Adapter.getResultStorage()
-         print("init defaultThreadContext...")
-         let defaultThreadContext = ThreadContext()
-         print("init defaultWriter...")
-         let defaultWriter = HttpWriter(configuration: clientConfiguration, client: defaultClient, storage: defaultStorage)
-
-         self.init(clientConfiguration: clientConfiguration, 
-                   adapterConfig: adapterConfig, 
-                   client: defaultClient, 
-                   storage: defaultStorage, 
-                   threadContext: defaultThreadContext, 
-                   writer: defaultWriter)
-        Self.logger.debug("Initialized AdapterManager using all default dependencies.")
-    }
-    
     private func logInitialConfigs() {
          Self.logger.debug("Client configurations: \(String(describing: self.clientConfiguration))") // Adapt if ClientConfiguration isn't CustomStringConvertible
          Self.logger.debug("Adapter configurations: \(self.adapterConfig)") // AdapterConfig is CustomStringConvertible
