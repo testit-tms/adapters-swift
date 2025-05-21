@@ -1,43 +1,6 @@
 import Foundation
 import TestitApiClient
 
-// Stub for ApiClient protocol
-// Replace with your actual implementation
-
-// Assuming TestRunV2GetModel exists or create a stub for it
-// struct TestRunV2GetModel {
-//     var id: UUID
-//     var stateName: TestRunState // Needs TestRunState definition
-//     // Add other properties
-// }
-
-// Renaming TestRunV2GetModel to TestRunV2ApiResult based on updated interface
-// struct TestRunV2GetModel { // [DELETED]
-//     var id: UUID // [DELETED]
-//     var stateName: TestRunState // Needs TestRunState definition // [DELETED]
-//     // Add other properties // [DELETED]
-// } // [DELETED]
-
-// Stub for TestRunV2ApiResult
-//struct TestRunV2ApiResult {
-//    var id: UUID // Assuming based on previous GetModel and createTestRun usage
-//    var stateName: TestRunState // Assuming based on previous GetModel and getTestRun usage
-//    // Add other properties based on actual definition
-//}
-//
-//// Assuming TestRunState exists or create a stub for it
-//enum TestRunState: String, Codable { // Example definition
-//    case new = "New"
-//    case inProgress = "InProgress"
-//    case completed = "Completed"
-//    // Add other states
-//}
-//
-//// Stub for WorkItemIdentifierModel
-//struct WorkItemIdentifierModel {
-//    var id: String? // Or Int? Needs actual definition
-//    // Add other properties
-//}
 
 protocol ApiClient {
     // Define methods based on usage in AdapterManager
