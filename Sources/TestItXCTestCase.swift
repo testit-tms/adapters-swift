@@ -6,7 +6,7 @@ import ObjectiveC
 ///
 /// This class provides hooks (`logLifecycleEvent`) to integrate external systems (like the TestIt adapter)
 /// by allowing custom logic to be executed before and after standard test lifecycle methods.
-open class TestItTestCase: XCTestCase { // Renamed from CustomTestCase
+open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
     private static var originalSetUpIMP: IMP? = nil
     private static var originalTearDownIMP: IMP? = nil
 
@@ -18,14 +18,14 @@ open class TestItTestCase: XCTestCase { // Renamed from CustomTestCase
 
     private static let swizzleSetupAndTeardown: Void = {
         // Swizzle setUp
-        let originalSetUp = class_getInstanceMethod(TestItTestCase.self, #selector(setUp)) // Updated class name
-        let swizzledSetUp = class_getInstanceMethod(TestItTestCase.self, #selector(swizzled_setUp)) // Updated class name
+        let originalSetUp = class_getInstanceMethod(TestItXCTestCase.self, #selector(setUp)) // Updated class name
+        let swizzledSetUp = class_getInstanceMethod(TestItXCTestCase.self, #selector(swizzled_setUp)) // Updated class name
         originalSetUpIMP = method_getImplementation(originalSetUp!)
         method_exchangeImplementations(originalSetUp!, swizzledSetUp!)
 
         // Swizzle tearDown
-        let originalTearDown = class_getInstanceMethod(TestItTestCase.self, #selector(tearDown)) // Updated class name
-        let swizzledTearDown = class_getInstanceMethod(TestItTestCase.self, #selector(swizzled_tearDown)) // Updated class name
+        let originalTearDown = class_getInstanceMethod(TestItXCTestCase.self, #selector(tearDown)) // Updated class name
+        let swizzledTearDown = class_getInstanceMethod(TestItXCTestCase.self, #selector(swizzled_tearDown)) // Updated class name
         originalTearDownIMP = method_getImplementation(originalTearDown!)
         method_exchangeImplementations(originalTearDown!, swizzledTearDown!)
     }()
@@ -35,7 +35,7 @@ open class TestItTestCase: XCTestCase { // Renamed from CustomTestCase
     override open class func setUp() {
         super.setUp()
         
-        _ = TestItTestCase.swizzleSetupAndTeardown // Updated class name
+        _ = TestItXCTestCase.swizzleSetupAndTeardown // Updated class name
     }
 
 
@@ -48,7 +48,7 @@ open class TestItTestCase: XCTestCase { // Renamed from CustomTestCase
         OverallLifecycleObserver.shared.onBeforeSetup(testCase: self)
 
         // Call the original `setUp` implementation
-        if let originalIMP = TestItTestCase.originalSetUpIMP { // Updated class name
+        if let originalIMP = TestItXCTestCase.originalSetUpIMP { // Updated class name
             let originalSetUpFunc = unsafeBitCast(originalIMP, to: (@convention(c) (AnyObject, Selector) -> Void).self)
             originalSetUpFunc(self, #selector(XCTestCase.setUp))
         }
@@ -63,7 +63,7 @@ open class TestItTestCase: XCTestCase { // Renamed from CustomTestCase
         OverallLifecycleObserver.shared.onBeforeTeardown(testCase: self)
 
         // Call the original `tearDown` implementation
-        if let originalIMP = TestItTestCase.originalTearDownIMP { // Updated class name
+        if let originalIMP = TestItXCTestCase.originalTearDownIMP { // Updated class name
             let originalTearDownFunc = unsafeBitCast(originalIMP, to: (@convention(c) (AnyObject, Selector) -> Void).self)
             originalTearDownFunc(self, #selector(XCTestCase.tearDown))
         }

@@ -95,7 +95,7 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
         print("[OverallLifecycleObserver SHARED]: Test suite did finish: \(testSuite.name)")
     }
 
-    // looks like the same as TestItTestCase.invokeTest()
+    // looks like the same as TestItXCTestCase.invokeTest()
     func testCaseWillStart(_ testCase: XCTestCase) {
         print("[OverallLifecycleObserver SHARED]: Test case will start: \(testCase.name)")
 
@@ -279,9 +279,7 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
     
     private func findXCTestBundle() -> Bundle? {
         for bundle in Bundle.allBundles {
-            // Ищем бандлы с расширением .xctest ИЛИ бандлы, содержащие известный класс из вашего тестового таргета
-            // (например, TestItTestCase, если он есть только в тестовом таргете)
-            // Для простоты пока оставим только .xctest
+            // Ищем бандлы с расширением .xctest
             if bundle.bundlePath.hasSuffix(".xctest") {
                 print("[OverallLifecycleObserver SHARED]: Found .xctest bundle via findXCTestBundle: \(bundle.bundleURL.lastPathComponent)")
                 return bundle
