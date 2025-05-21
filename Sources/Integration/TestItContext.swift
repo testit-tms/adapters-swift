@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-import TestitApiClient
+import testit_api_client
 
 public struct TestItContext {
     var uuid: String?

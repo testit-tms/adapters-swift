@@ -1,6 +1,6 @@
 import Foundation
 import os.log
-import TestitApiClient
+import testit_api_client
 
 
 class HttpWriter: Writer {
