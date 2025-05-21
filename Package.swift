@@ -19,8 +19,7 @@ let package = Package(
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/Flight-School/AnyCodable", .upToNextMajor(from: "0.6.1")),
-        .package(url: "https://github.com/testit-tms/api-client-swift", .upToNextMajor(from: "0.1.0")),
+        .package(url: "https://github.com/testit-tms/api-client-swift", .exact("0.1.3"))
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -29,7 +28,7 @@ let package = Package(
             name: "testit-adapters-swift",
             dependencies: [
                 "AnyCodable", 
-                .product(name: "TestitApiClient", package: "api-client-swift")
+                .product(name: "api-client-swift", package: "api-client-swift")
             ],
             path: "Sources"
         ),
