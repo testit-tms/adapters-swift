@@ -1,5 +1,5 @@
 import Foundation
-import TestitApiClient
+import testit_api_client
 
 // Definitions for dependent types.
 

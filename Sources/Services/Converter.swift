@@ -1,5 +1,5 @@
 import Foundation
-import TestitApiClient
+import testit_api_client
 import os.log
 
 enum Converter {
@@ -221,7 +221,7 @@ enum Converter {
     static func convertPostLinks(_ links: [LinkItem]) -> [LinkPostModel] {
         return links.compactMap { link -> LinkPostModel? in
             // Safely create LinkType from rawValue
-            guard let linkType = TestitApiClient.LinkType(rawValue: link.type.rawValue) else {
+            guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
                 print("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
                 return nil
             }
@@ -237,7 +237,7 @@ enum Converter {
 
     static func convertPutLinks(_ links: [LinkItem]) -> [LinkPutModel] {
         return links.compactMap { link -> LinkPutModel? in
-            guard let linkType = TestitApiClient.LinkType(rawValue: link.type.rawValue) else {
+            guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
                  print("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
                 return nil
             }
@@ -435,8 +435,8 @@ enum Converter {
     private static func convertLinkApiResultsToPutLinks(_ links: [LinkApiResult]) -> [LinkPutModel] {
         // No need to check for null as the input type is non-optional array
         return links.compactMap { link -> LinkPutModel? in
-            // link.type is TestitApiClient.LinkType? as per linter error.
-            // LinkPutModel expects a non-optional TestitApiClient.LinkType for its 'type' parameter.
+            // link.type is testit_api_client.LinkType? as per linter error.
+            // LinkPutModel expects a non-optional testit_api_client.LinkType for its 'type' parameter.
             // So, we just need to unwrap link.type.
             guard let linkType = link.type else {
                  print("Warning: LinkApiResult.type is nil. LinkPutModel requires a non-optional LinkType.")
