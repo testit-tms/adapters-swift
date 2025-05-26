@@ -35,7 +35,7 @@ final class TestItWriter {
     private let testService: TestService
     let fixtureService: FixtureService
 
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestItWriter")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestItWriter")
 
 
     init() {

@@ -23,14 +23,12 @@ final class TestService {
     // MARK: - Test Lifecycle
 
     func onTestStart(testCase: XCTestCase, uuid: String) async {
-        logger.info("TestService.onTestStart called... with uuid: \(uuid)")
-        
+        Self.logger.info("TestService.onTestStart called... with uuid: \(uuid)")
         
         let className = String(describing: type(of: testCase))
         let testName = testCase.name
         let spaceName = TestItContext.getNamespace(from: testCase)
         // let spaceName = "default"
-
 
         let result = TestResultCommon(
             uuid: uuid,
@@ -50,12 +48,12 @@ final class TestService {
    
 
     func stopTestWithResult(testCase: XCTestCase, status: ItemStatus, message: String?, trace: String?) async {
-        logger.debug("TestService.stopTestWithResult called for test: \(testCase.name) with status: \(String(describing: status))")
+        Self.logger.debug("TestService.stopTestWithResult called for test: \(testCase.name) with status: \(String(describing: status))")
         
         executableTestService.setAfterStatus(testName: testCase.name)
         
         guard let uuid = executableTestService.getUuid(testName: testCase.name) else {
-            logger.error("Could not get UUID for test: \(testCase.name) in stopTestWithResult.")
+            Self.logger.error("Could not get UUID for test: \(testCase.name) in stopTestWithResult.")
             return
         }
 
@@ -65,36 +63,36 @@ final class TestService {
         switch status {
         case .passed:
             finalItemStatus = .passed
-            logger.debug("Test successful: \(testCase.name)")
+            Self.logger.debug("Test successful: \(testCase.name)")
         case .failed:
             finalItemStatus = .failed
             if let msg = message {
                 errorForThrowable = NSError(domain: "XCTestError", code: 1, userInfo: [NSLocalizedDescriptionKey: msg, "trace": trace ?? "No trace available"])
             }
-            logger.debug("Test failed: \(testCase.name) - Message: \(message ?? "N/A")")
+            Self.logger.debug("Test failed: \(testCase.name) - Message: \(message ?? "N/A")")
         case .skipped:
             finalItemStatus = .skipped
             if let msg = message {
                 errorForThrowable = NSError(domain: "XCTestSkipped", code: 0, userInfo: [NSLocalizedDescriptionKey: msg])
             }
-            logger.debug("Test skipped: \(testCase.name) - Message: \(message ?? "N/A")")
+            Self.logger.debug("Test skipped: \(testCase.name) - Message: \(message ?? "N/A")")
         case .inProgress:
-            logger.debug("In progress")
+            Self.logger.debug("In progress")
         case .blocked:
-            logger.debug("Blocked")
+            Self.logger.debug("Blocked")
         }
 
         
         let context = TestItContextBuilder.getContext(forKey: testCase.name)
         if let context = context {
-            logger.info("TestItContext: \(context)")
+            // Self.logger.info("TestItContext: \(context)")
             adapterManager.updateTestCase(uuid: uuid) { testResult in 
                 testResult.itemStatus = finalItemStatus
                 testResult.throwable = errorForThrowable
                 testResult.updateFromContext(with: context)
             }
         } else {
-            logger.info("TestItContext not found for key: \(testCase.name)")
+            Self.logger.info("TestItContext not found for key: \(testCase.name)")
             adapterManager.updateTestCase(uuid: uuid) { testResult in 
                 testResult.itemStatus = finalItemStatus
                 testResult.throwable = errorForThrowable

@@ -87,7 +87,7 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
         logLifecycleEvent("TestIt tearDown completed for \(self.name)") // Updated log message
     }
 
-    @objc func swizzled_setUpWithError() {
+    @objc func swizzled_setUpWithError() throws {
         // Tracking logic before user-defined `setUp`
  
         logLifecycleEvent("TestIt setUpWithError started for \(self.name)") // Updated log message
@@ -105,7 +105,7 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
         logLifecycleEvent("TestIt setUpWithError completed for \(self.name)") // Updated log message
     }
 
-    @objc func swizzled_tearDownWithError() {
+    @objc func swizzled_tearDownWithError() throws {
         logLifecycleEvent("TestIt tearDownWithError started for \(self.name)") // Updated log message
         OverallLifecycleObserver.shared.onBeforeTeardown(testCase: self)
 
