@@ -7,7 +7,7 @@ class ThreadContext {
     private var currentContext: [String: String] = [:] 
     private let lock = NSLock()
     private var uuidStack: [String] = [] // Simple stack simulation
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "ThreadContext")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "ThreadContext")
 
 
     func clear() {
