@@ -85,8 +85,8 @@ class AdapterManager {
 
         if !isConfigTestRunIdMissing && self.clientConfiguration.mode != "2" {
             Self.logger.info("Test Run ID already provided in configuration: \(initialTestRunId). Using this ID.")
-            // Убедимся, что writer знает об этом ID, если он был установлен только в конфигурации
-            // и не прошел через логику ниже (например, при перезапуске с уже существующим ID)
+            // Ensure that writer knows about this ID, if it was set only in configuration
+            // and not passed through the logic below (for example, when restarting with an already existing ID)
             self.writer?.setTestRun(testRunId: initialTestRunId)
             return
         }
@@ -110,7 +110,7 @@ class AdapterManager {
         
         do {
             Self.logger.debug("Calling client.createTestRun() asynchronously...")
-            let response = try await self.client.createTestRun() // Асинхронный вызов
+            let response = try await self.client.createTestRun() // Async call
             let newTestRunId = response.id.uuidString
             Self.logger.debug("client.createTestRun() completed. New Test Run ID: \(newTestRunId)")
             lock.lock()

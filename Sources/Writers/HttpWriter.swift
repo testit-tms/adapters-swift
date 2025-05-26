@@ -41,7 +41,6 @@ class HttpWriter: Writer {
                     autoTestPutModel = Converter.autoTestModelToAutoTestPutModel(
                         autoTestModel: existingAutotest,
                         links: Converter.convertPutLinks(testResultCommon.linkItems), // linkItems: [LinkItemModel]?
-                        // TODO: set isFlaky from somewhere?
                         isFlaky: false
                     )!
                 } else {
@@ -52,7 +51,6 @@ class HttpWriter: Writer {
                     autoTestPutModel = Converter.testResultToAutoTestPutModel(
                         result: testResultCommon,
                         projectId: projectId,
-                        // TODO: set isFlaky from somewhere
                         isFlaky: false
                     )!
                 }
@@ -64,7 +62,7 @@ class HttpWriter: Writer {
                     Self.logger.info("Successfully updated autotest with externalId: \(testResultCommon.externalId)")
                 } catch {
                     Self.logger.error("Error updating autotest with externalId \(testResultCommon.externalId): \(error.localizedDescription). Proceeding without this autotest ID.")
-                    // autoTestId остается nil или тем, чем был до этого, выполнение продолжается
+                    // autoTestId keep nil or the same as before, the execution continues
                 }
             } else {
                 Self.logger.debug("Creating new auto test: \(testResultCommon.externalId)")
@@ -166,7 +164,6 @@ class HttpWriter: Writer {
                     autoTestModel: autoTestModel,
                     setup: beforeClassFixtures,
                     teardown: afterClassFixtures,
-                    // TODO: isFlaky
                     isFlaky: false
                 )
                 Self.logger.debug("writeClass: Calling client.updateAutoTest with ")

@@ -54,8 +54,8 @@ class TmsApiClient: ApiClient {
         let createResponse: TestRunV2ApiResult = try await withCheckedThrowingContinuation { continuation in
             _ = TestRunsAPI.createEmpty(createEmptyTestRunApiModel: model) { [weak self] data, error in
                 guard let _ = self else {
-                    // Self был деаллоцирован, что маловероятно, если createTestRun еще выполняется,
-                    // но безопасно обработать.
+                    // Self was deallocated, which is unlikely if createTestRun is still executing,
+                    // but it's safe to handle.
                     Self.logger.error("createEmpty callback: self is nil during createTestRun")
                     continuation.resume(throwing: TmsApiClientError.internalError("Self was deallocated during createEmpty callback"))
                     return
@@ -88,7 +88,7 @@ class TmsApiClient: ApiClient {
                     Self.logger.error("Error starting test run: \(error.localizedDescription)")
                     continuation.resume(throwing: error)
                 } else {
-                    // Успешный запуск, возвращаем Void
+                    // Successful start, returning Void
                     continuation.resume(returning: ())
                 }
             }
@@ -550,16 +550,16 @@ class TmsApiClient: ApiClient {
              throw TmsApiClientError.fileNotFound(path)
         }
 
-        // Логируем текущую рабочую директорию
+        // Log the current working directory
         let currentDirectory = FileManager.default.currentDirectoryPath
         Self.logger.debug("Current working directory: \(currentDirectory)")
 
-        // Проверка прав доступа
+        // Check file permissions
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: path)
             //Self.logger.debug("File attributes: \(attributes)")
             
-            // Проверка прав на чтение
+            // Check read permissions
             if !FileManager.default.isReadableFile(atPath: path) {
                 Self.logger.error("Cannot add attachment: No read permission for file at path \"\(path)\"")
                 throw TmsApiClientError.fileNotFound(path)
@@ -701,7 +701,6 @@ extension TestRunV2ApiResult {
     // This might require another stub model like TestResultV2ShortModel
      var testResults: [TestResultV2ShortModel]? {
          // return actual property or parse from raw response data
-         print("Warning: Accessing stubbed TestRunV2ApiResult.testResults")
          return nil // Placeholder - Needs real implementation or better stub
      }
 }

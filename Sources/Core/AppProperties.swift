@@ -1,5 +1,5 @@
 import Foundation
-import os.log // Using os.log for better logging than print
+import os.log 
 
 // Using an enum to encapsulate property loading logic and constants
 enum AppProperties {
@@ -51,38 +51,32 @@ enum AppProperties {
         ]
     ]
 
-    public static private(set) var configuration: [String: String]? // Пример: словарь
+    public static private(set) var configuration: [String: String]? 
 
-
-    // Вариант 1: Метод для инициализации из конкретного бандла
     public static func initialize(from bundle: Bundle) {
-        guard configuration == nil else { return } // Инициализируем только один раз
+        guard configuration == nil else { return } // Initialize only once
 
         guard let propertiesURL = bundle.url(forResource: PROPERTIES_FILE.deletingPathExtension, // "testit"
                                              withExtension: PROPERTIES_FILE.pathExtension) else { // "properties"
-            print("AppProperties: Файл \(PROPERTIES_FILE) не найден в бандле: \(bundle.bundleIdentifier ?? "N/A")")
-            // Возможно, установить дефолтную конфигурацию или выбросить ошибку
-            configuration = [:] // Или nil
+            logger.warning("AppProperties: File \(PROPERTIES_FILE) not found in bundle: \(bundle.bundleIdentifier ?? "N/A")")
+            configuration = [:] // Or nil
             return
         }
 
         do {
             let propertiesContent = try String(contentsOf: propertiesURL, encoding: .utf8)
-            print("AppProperties: Конфигурация успешно загружена из \(propertiesURL.path)")
-            // Здесь парсинг propertiesContent в словарь configuration
-            // TODO: Реализовать парсинг .properties файла
-            configuration = loadPropertiesFromString(content: propertiesContent) // Замените на реальный парсер
+            logger.info("AppProperties: Configuration successfully loaded from \(propertiesURL.path)")
+            configuration = loadPropertiesFromString(content: propertiesContent) 
         } catch {
-            print("AppProperties: Ошибка чтения файла \(PROPERTIES_FILE): \(error)")
-            configuration = [:] // Или nil
+            logger.error("AppProperties: Error reading file \(PROPERTIES_FILE): \(error)")
+            configuration = [:] // Or nil
         }
     }
 
     public static func initialize(propertiesString: String) {
          guard configuration == nil else { return }
-         print("AppProperties: Инициализация из переданной строки.")
-         // Здесь парсинг propertiesString в словарь configuration
-        configuration = loadPropertiesFromString(content: propertiesString) // Замените на реальный парсер
+         logger.info("AppProperties: Initialization from passed string.")
+        configuration = loadPropertiesFromString(content: propertiesString) 
     }
 
     // MARK: - Loading Logic
@@ -316,7 +310,7 @@ enum AppProperties {
     }
 } 
 
-// Расширение должно работать после импорта Foundation
+// Extension must work after importing Foundation
 fileprivate extension String {
     var deletingPathExtension: String {
         return (self as NSString).deletingPathExtension

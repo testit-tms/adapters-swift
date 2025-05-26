@@ -4,14 +4,14 @@ import os.log
 
 enum Converter {
     
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TmsApiClient")
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "Converter")
 
     static func testResultToAutoTestPostModel(result: TestResultCommon, projectId: UUID?) -> AutoTestPostModel? {
        
         guard let uuidString = result.uuid,
-              let projId = projectId ?? UUID(uuidString: uuidString)
+            let projId = projectId ?? UUID(uuidString: uuidString)
         else {
-            print("Error: Missing required uuid in TestResultCommon or invalid UUID string for AutoTestPostModel conversion.")
+            logger.error("Error: Missing required uuid in TestResultCommon or invalid UUID string for AutoTestPostModel conversion.")
             return nil
         }
 
@@ -48,8 +48,8 @@ enum Converter {
         let uuidString = result.externalId
         guard let projId = projectId ?? UUID(uuidString: uuidString)
         else {
-             // Update error message
-             print("Error: Missing required uuid in TestResultCommon or invalid UUID string for AutoTestPutModel conversion.")
+            // Update error message
+            logger.error("Error: Missing required uuid in TestResultCommon or invalid UUID string for AutoTestPutModel conversion.")
             return nil
         }
 
@@ -189,7 +189,7 @@ enum Converter {
               let configId = configurationId ?? UUID(uuidString: uuidString) // Use guard let for nil-coalescing with failable init
         else {
             // Update error message
-            print("Error: Missing required fields (itemStatus, uuid, configurationId) or invalid status/uuid/configId in TestResultCommon for AutoTestResultsForTestRunModel conversion.")
+            logger.error("Error: Missing required fields (itemStatus, uuid, configurationId) or invalid status/uuid/configId in TestResultCommon for AutoTestResultsForTestRunModel conversion.")
             return nil
         }
 
@@ -222,7 +222,7 @@ enum Converter {
         return links.compactMap { link -> LinkPostModel? in
             // Safely create LinkType from rawValue
             guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
-                print("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
+                logger.warning("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
                 return nil
             }
             return LinkPostModel(
@@ -238,7 +238,7 @@ enum Converter {
     static func convertPutLinks(_ links: [LinkItem]) -> [LinkPutModel] {
         return links.compactMap { link -> LinkPutModel? in
             guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
-                 print("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
+                logger.warning("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
                 return nil
             }
             return LinkPutModel(
@@ -266,12 +266,12 @@ enum Converter {
     static func convertResultStep(_ steps: [StepResult]) -> [AttachmentPutModelAutoTestStepResultsModel] {
         return steps.compactMap { step -> AttachmentPutModelAutoTestStepResultsModel? in
             guard let start = step.start,
-                  let stop = step.stop,
-                  let statusValue = step.itemStatus?.value, // Assuming ItemStatus has String value
-                  let outcome = AvailableTestResultOutcome(rawValue: statusValue) 
+                let stop = step.stop,
+                let statusValue = step.itemStatus?.value, // Assuming ItemStatus has String value
+                let outcome = AvailableTestResultOutcome(rawValue: statusValue) 
             else { 
-                 print("Warning: Skipping StepResult conversion due to missing start/stop/status.")
-                 return nil 
+                logger.warning("Warning: Skipping StepResult conversion due to missing start/stop/status.")
+                return nil 
             }
 
             return AttachmentPutModelAutoTestStepResultsModel(
@@ -293,16 +293,16 @@ enum Converter {
         return fixtures
             .filter { filterSteps(parentUuid: parentUuid, f: $0) }
             .compactMap { fixture -> AttachmentPutModelAutoTestStepResultsModel? in
-                 guard let start = fixture.start,
-                      let stop = fixture.stop,
-                      let statusValue = fixture.itemStatus?.value, // Assuming ItemStatus has String value
-                      let outcome = AvailableTestResultOutcome(rawValue: statusValue) 
-                 else { 
-                     print("Warning: Skipping FixtureResult conversion due to missing start/stop/status.")
-                     return nil
-                 }
+                guard let start = fixture.start,
+                    let stop = fixture.stop,
+                    let statusValue = fixture.itemStatus?.value, // Assuming ItemStatus has String value
+                    let outcome = AvailableTestResultOutcome(rawValue: statusValue) 
+                else { 
+                    logger.warning("Warning: Skipping FixtureResult conversion due to missing start/stop/status.")
+                    return nil
+                }
                  
-                 return AttachmentPutModelAutoTestStepResultsModel(
+                return AttachmentPutModelAutoTestStepResultsModel(
                     title: fixture.name,
                     description: fixture.description,
                     startedOn: Date(timeIntervalSince1970: TimeInterval(start / 1000)), // Convert Int64 ms to Date
@@ -312,7 +312,7 @@ enum Converter {
                     stepResults: convertResultStep(fixture.getSteps()),
                     attachments: convertAttachments(fixture.getAttachments()),
                     parameters: fixture.parameters
-                 )
+                )
             }
     }
 
@@ -354,7 +354,7 @@ enum Converter {
     static func convertAttachments(_ uuids: [String]) -> [AttachmentPutModel]? {
         let attachmentModels = uuids.compactMap { uuidString -> AttachmentPutModel? in
             guard let uuid = UUID(uuidString: uuidString) else { 
-                print("Warning: Could not convert string \"\(uuidString)\" to UUID.")
+                logger.warning("Warning: Could not convert string \"\(uuidString)\" to UUID.")
                 return nil 
             }
             return AttachmentPutModel(id: uuid)
@@ -379,7 +379,7 @@ enum Converter {
         else {
             // lastTestResultOutcome added to guard based on linter error.
             // externalId re-added to guard based on current linter error.
-            print("Error: Missing apiResult, or externalId for AutoTestModel conversion.")
+            logger.error("Error: Missing apiResult, or externalId for AutoTestModel conversion.")
             return nil
         }
 
@@ -439,7 +439,7 @@ enum Converter {
             // LinkPutModel expects a non-optional testit_api_client.LinkType for its 'type' parameter.
             // So, we just need to unwrap link.type.
             guard let linkType = link.type else {
-                 print("Warning: LinkApiResult.type is nil. LinkPutModel requires a non-optional LinkType.")
+                logger.warning("Warning: LinkApiResult.type is nil. LinkPutModel requires a non-optional LinkType.")
                 return nil
             }
             // Requires LinkType to be RawRepresentable with rawValue matching type.value
@@ -475,7 +475,7 @@ extension ItemStatus {
         // This assumes ItemStatus is a RawRepresentable enum (like String)
         // Adjust if the actual ItemStatus structure is different.
         if let raw = self as? (any RawRepresentable) {
-             return raw.rawValue as? String
+            return raw.rawValue as? String
         } 
         return nil
     }

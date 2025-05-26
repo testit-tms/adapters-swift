@@ -1,8 +1,13 @@
 import Foundation
 import CryptoKit
+import os.log
+
 
 
 enum Utils {
+
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "Utils")
+
     static func genExternalID(_ fullName: String) -> String {
         return getHash(fullName)
     }
@@ -23,7 +28,7 @@ enum Utils {
 
     static func getHash(_ value: String) -> String {
         guard let data = value.data(using: .utf8) else {
-            print("Error: Could not convert string to UTF8 data for hashing.")
+            logger.error("Error: Could not convert string to UTF8 data for hashing.")
             return value 
         }
         let digest = SHA256.hash(data: data)

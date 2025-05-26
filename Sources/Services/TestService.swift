@@ -1,5 +1,5 @@
 import Foundation
-import OSLog
+import os.log
 import XCTest
 
 final class TestService {
@@ -8,7 +8,7 @@ final class TestService {
     private let isStepContainers: Bool
     private let executableTestService: ExecutableTestService
 
-    private let logger = Logger()
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestService")
 
     init(adapterManager: AdapterManager,
          uuids: [String: String],
@@ -23,7 +23,7 @@ final class TestService {
     // MARK: - Test Lifecycle
 
     func onTestStart(testCase: XCTestCase, uuid: String) async {
-        print("TestService.onTestStart called... with uuid: \(uuid)")
+        logger.info("TestService.onTestStart called... with uuid: \(uuid)")
         
         
         let className = String(describing: type(of: testCase))
@@ -87,14 +87,14 @@ final class TestService {
         
         let context = TestItContextBuilder.getContext(forKey: testCase.name)
         if let context = context {
-            print("TestItContext: \(context)")
+            logger.info("TestItContext: \(context)")
             adapterManager.updateTestCase(uuid: uuid) { testResult in 
                 testResult.itemStatus = finalItemStatus
                 testResult.throwable = errorForThrowable
                 testResult.updateFromContext(with: context)
             }
         } else {
-            // print("TestItContext not found for key: \(testCase.name)")
+            logger.info("TestItContext not found for key: \(testCase.name)")
             adapterManager.updateTestCase(uuid: uuid) { testResult in 
                 testResult.itemStatus = finalItemStatus
                 testResult.throwable = errorForThrowable
