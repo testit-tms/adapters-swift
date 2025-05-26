@@ -1,4 +1,3 @@
-// TODO: dependency from commons
 import Foundation
 
 /// Represents the current stage of an executable test's lifecycle.
@@ -40,27 +39,22 @@ public struct ExecutableTest {
         self.executableTestStage = executableTestStage
     }
 
-    /// Sets the execution stage to `.test`.
     public mutating func setTestStatus() {
         self.executableTestStage = .test
     }
 
-    /// Sets the execution stage to `.after`.
     public mutating func setAfterStatus() {
         self.executableTestStage = .after
     }
 
-    /// Returns `true` if the current stage is `.after`.
     public func isAfter() -> Bool {
         return executableTestStage == .after
     }
 
-    /// Returns `true` if the current stage is `.before`.
     public func isBefore() -> Bool {
         return executableTestStage == .before
     }
 
-    /// Returns `true` if the current stage is `.test`.
     public func isTest() -> Bool {
         return executableTestStage == .test
     }

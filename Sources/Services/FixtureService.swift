@@ -51,7 +51,7 @@ final class FixtureService {
         
         let parentUuid = executableTestService.getUuid(testName: testCase.name)
         let fixtureResult = FixtureResult(
-            name: "TearDown", // Имя для teardown
+            name: "TearDown", // Name for teardown
             itemStage: .running,
             parent: parentUuid,
             start: Int64(start * 1000)
@@ -92,9 +92,9 @@ final class FixtureService {
         let stopTime = Int64(Date().timeIntervalSince1970 * 1000)
 
         adapterManager.updateFixture(uuid: uuid) { fixtureResult in
-            fixtureResult.name = fixtureName // Обновляем имя на всякий случай
+            fixtureResult.name = fixtureName // Update name in case
             fixtureResult.itemStatus = .failed
-            fixtureResult.itemStage = .finished // Ошибка завершает фикстуру
+            fixtureResult.itemStage = .finished // Error completes the fixture
             fixtureResult.stop = stopTime
             let issueDescription = issue.compactDescription
             let trace = issue.detailedDescription ?? issue.sourceCodeContext.description
@@ -102,9 +102,9 @@ final class FixtureService {
             fixtureResult.trace = (fixtureResult.trace ?? "") + "\n" + trace
         }
         
-        // Важно: НЕ вызываем adapterManager.stopFixture(uuid: uuid) здесь,
-        // чтобы информация о упавшей фикстуре осталась для HttpWriter.
-        // Логика stopFixture уже есть в onXYZTestOk/Failed методах, нужно будет ее пересмотреть.
+        // Important: Do NOT call adapterManager.stopFixture(uuid: uuid) here,
+        // to keep the information about the failed fixture for HttpWriter.
+        // The stopFixture logic is already present in onXYZTestOk/Failed methods, we need to review it.
         logger.debug("Updated fixture \(uuid) for \(context) with failure details.")
     }
 
@@ -115,7 +115,7 @@ final class FixtureService {
         }
 
         adapterManager.updateFixture(uuid: uuid) { fixtureResult in
-            // Завершаем фикстуру, только если она еще не была завершена (например, через recordFailureInCurrentFixture)
+            // Finish fixture only if it is not finished yet (for example, through recordFailureInCurrentFixture)
             if fixtureResult.itemStage != .finished {
                 fixtureResult.name = testCase.setupName() ?? "Setup"
                 fixtureResult.itemStatus = status
@@ -133,7 +133,7 @@ final class FixtureService {
                 self.logger.debug("BeforeFixture \(uuid) for test \(testCase.name) was already finished. Current status:")// \(fixtureResult.itemStatus!.rawValue)")
             }
         }
-        // Не вызываем adapterManager.stopFixture(uuid: uuid) здесь
+        // Do NOT call adapterManager.stopFixture(uuid: uuid) here
     }
 
     func completeCurrentAfterFixture(for testCase: XCTestCase, status: ItemStatus, stopTime: Date, issue: XCTIssue? = nil) {
@@ -143,7 +143,7 @@ final class FixtureService {
         }
 
         adapterManager.updateFixture(uuid: uuid) { fixtureResult in
-            // Завершаем фикстуру, только если она еще не была завершена
+            // Finish fixture only if it is not finished yet
             if fixtureResult.itemStage != .finished {
                 fixtureResult.name = testCase.teardownName() ?? "TearDown"
                 fixtureResult.itemStatus = status
@@ -161,7 +161,7 @@ final class FixtureService {
                 self.logger.debug("AfterFixture \(uuid) for test \(testCase.name) was already finished. Current status:")// \(fixtureResult.itemStatus!.rawValue)")
             }
         }
-        // Не вызываем adapterManager.stopFixture(uuid: uuid) здесь
+        // Do NOT call adapterManager.stopFixture(uuid: uuid) here
     }
 
 }

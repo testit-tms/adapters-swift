@@ -1,61 +1,64 @@
 import XCTest
 import Dispatch
-
+import os.log
 
 // https://developer.apple.com/documentation/xctest/xctestobservation
 class OverallLifecycleObserver: NSObject, XCTestObservation {
 
-    // Статический экземпляр синглтона
+    // Static singleton instance
     static let shared = OverallLifecycleObserver()
 
     private var writer: TestItWriter?
     private var appPropertiesInitialized = false
-    private var writerInitialized = false // Дополнительный флаг для writer
+    private var writerInitialized = false // Additional flag for writer
     private var beforeAllCalled = false
 
-    // Хранилище для XCTIssue текущего теста
+    // Storage for XCTIssue of the current test
     private var currentTestBodyIssues: [XCTIssue] = []
     private var currentFixtureIssues: [XCTIssue] = []
-    private var currentTestCaseName: String? // Для связи issue с конкретным тестом
+    private var currentTestCaseName: String? // For linking issue with specific test
 
-    // Контекст выполнения для setUp и tearDown
+    // Execution context for setUp and tearDown
     private var currentTestCaseInSetUp: XCTestCase?
     private var currentTestCaseInTearDown: XCTestCase?
 
-    // Приватный инициализатор, чтобы экземпляр создавался только через OverallLifecycleObserver.shared
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "OverallLifecycleObserver")
+
+
+    // Private initializer to ensure the instance is created only through OverallLifecycleObserver.shared
     private override init() {
         
         super.init()
         XCTestObservationCenter.shared.addTestObserver(self)
-        print("OverallLifecycleObserver.shared initialized and registered. Setup will occur based on XCTest lifecycle events.")
+        logger.info("OverallLifecycleObserver.shared initialized and registered. Setup will occur based on XCTest lifecycle events.")
     }
 
     deinit {
-        // XCTestObservationCenter хранит слабую ссылку, так что это может и не понадобиться,
-        // если shared будет жить все время. Но для полноты.
+        // XCTestObservationCenter stores a weak reference, so this may not be needed if shared lives the whole time.
+        // But for completeness.
         XCTestObservationCenter.shared.removeTestObserver(self)
-        print("OverallLifecycleObserver.shared deinitialized and removed.")
+        logger.info("OverallLifecycleObserver.shared deinitialized and removed.")
     }
 
 
-    // Этот метод вызывается перед запуском первого теста в бандле
+    // This method is called before the first test in the bundle
     // not called!
     func testBundleWillStart(_ testBundle: Bundle) {
-        print("[OverallLifecycleObserver SHARED]: Attempting setup in testBundleWillStart with bundle: \(testBundle.bundleURL.lastPathComponent)")
+        logger.info("Attempting setup in testBundleWillStart with bundle: \(testBundle.bundleURL.lastPathComponent)")
     }
 
     func testSuiteWillStart(_ testSuite: XCTestSuite) {
-        print("[OverallLifecycleObserver SHARED]: Test suite will start: \(testSuite.name)")
-        // Если зависимости еще не настроены (например, testBundleWillStart не сработал)
+        logger.info("Test suite will start: \(testSuite.name)")
+        // If dependencies are not yet configured (for example, testBundleWillStart did not work)
         if !appPropertiesInitialized || !writerInitialized {
-            print("[OverallLifecycleObserver SHARED]: Dependencies not yet fully initialized, attempting setup via testSuiteWillStart.")
-            // Пытаемся найти .xctest бандл, так как Bundle(for: type(of: testSuite)) может быть не тем
+            logger.info("Dependencies not yet fully initialized, attempting setup via testSuiteWillStart.")
+            // Try to find .xctest bundle, because Bundle(for: type(of: testSuite)) may be not the right one
             if let xctestBundle = findXCTestBundle() {
-                setupDependencies(using: xctestBundle, isPreferredBundle: false) // false, так как это fallback
+                setupDependencies(using: xctestBundle, isPreferredBundle: false) // false, because this is fallback
             } else {
-                // Если не нашли .xctest, попробуем с бандлом сьюты, но это менее надежно
+                // If .xctest bundle is not found, try to use suite bundle, but this is less reliable
                 let suiteBundle = Bundle(for: type(of: testSuite))
-                print("[OverallLifecycleObserver SHARED]: .xctest bundle not found, falling back to suiteBundle: \(suiteBundle.bundleURL.lastPathComponent) for setup.")
+                logger.info(".xctest bundle not found, falling back to suiteBundle: \(suiteBundle.bundleURL.lastPathComponent) for setup.")
                 setupDependencies(using: suiteBundle, isPreferredBundle: false)
             }
         }
@@ -64,97 +67,97 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
         if !beforeAllCalled {
             let success = waitForAsyncTask {
                 guard let strongWriter = self.writer else {
-                    print("[OverallLifecycleObserver SHARED]: ERROR from testSuiteWillStart Task - Writer is nil.")
+                    logger.error("ERROR from testSuiteWillStart Task - Writer is nil.")
                     return
                 }
                 await strongWriter.onBeforeAll()
                 self.beforeAllCalled = true
             }
-            print("[OverallLifecycleObserver SHARED]: testSuiteWillStart - onBeforeAll completion success: \(success)")
+            logger.info("testSuiteWillStart - onBeforeAll completion success: \(success)")
         }
     }
 
 
-    // Этот метод вызывается ПОСЛЕ завершения ВСЕХ тестов в бандле
+    // This method is called AFTER ALL tests in the bundle have finished
     func testBundleDidFinish(_ testBundle: Bundle) {
-        print("-------------------------------------")
-        print("[OverallLifecycleObserver SHARED]: >>> All tests in the bundle did finish! <<<: \(testBundle.bundleURL.lastPathComponent)")
-        print("-------------------------------------")
+        logger.info("-------------------------------------")
+        logger.info(">>> All tests in the bundle did finish! <<<: \(testBundle.bundleURL.lastPathComponent)")
+        logger.info("-------------------------------------")
         let success = waitForAsyncTask {
             guard let strongWriter = self.writer else {
-                print("[OverallLifecycleObserver SHARED]: ERROR from testBundleDidFinish Task - Writer is nil.")
+                logger.error("ERROR from testBundleDidFinish Task - Writer is nil.")
                 return
             }
             await strongWriter.onAfterAll()
         }
-        print("[OverallLifecycleObserver SHARED]: testBundleDidFinish - onAfterAll completion success: \(success)")
+        logger.info("testBundleDidFinish - onAfterAll completion success: \(success)")
     }
     
-    // Остальные методы протокола XCTestObservation...
+    // The rest of the XCTestObservation protocol methods...
     func testSuiteDidFinish(_ testSuite: XCTestSuite) {
-        print("[OverallLifecycleObserver SHARED]: Test suite did finish: \(testSuite.name)")
+        logger.info("Test suite did finish: \(testSuite.name)")
     }
 
     // looks like the same as TestItXCTestCase.invokeTest()
     func testCaseWillStart(_ testCase: XCTestCase) {
-        print("[OverallLifecycleObserver SHARED]: Test case will start: \(testCase.name)")
+        logger.info("Test case will start: \(testCase.name)")
 
-        // Очищаем перед новым тестом
+        // Clear before new test
         self.currentTestBodyIssues = []
         self.currentFixtureIssues = []
         self.currentTestCaseName = testCase.name
 
         let success = waitForAsyncTask {
-            print("[OverallLifecycleObserver SHARED] Task for testCaseWillStart: Calling writer.onTestWillStart for test \(testCase.name)...")
-            // Задержка удалена, так как не была частью запроса на откат к waitForAsyncTask
+            logger.info("Task for testCaseWillStart: Calling writer.onTestWillStart for test \(testCase.name)...")
+            // Delay removed, because it was not part of the rollback request to waitForAsyncTask
             guard let strongWriter = self.writer else {
-                print("[OverallLifecycleObserver SHARED]: ERROR from testCaseWillStart Task - Writer is nil.")
+                logger.error("ERROR from testCaseWillStart Task - Writer is nil.")
                 return
             }
             await strongWriter.onTestWillStart(for: testCase)
-            print("[OverallLifecycleObserver SHARED] Task for testCaseWillStart: writer.onTestWillStart completed for test \(testCase.name).")
+            logger.info("Task for testCaseWillStart: writer.onTestWillStart completed for test \(testCase.name).")
         }
-        print("[OverallLifecycleObserver SHARED]: testCaseWillStart - onTestWillStart completion success: \(success)")
+        logger.info("testCaseWillStart - onTestWillStart completion success: \(success)")
     }
 
     // automatically in both success and failure cases
     func testCaseDidFinish(_ testCase: XCTestCase) {
-        print("[OverallLifecycleObserver SHARED]: Test case did finish: \(testCase.name)")
-        let finishTime = Date() // Фиксируем время завершения теста
+        logger.info("Test case did finish: \(testCase.name)")
+        let finishTime = Date() // Fix time of test finish
 
         waitForAsyncTask {
             if let strongWriter = self.writer {
                 let fixtureService = strongWriter.fixtureService
-                // Завершаем before-фикстуру (setUp)
-                // Если recordFailureInCurrentFixture уже пометил ее как failed и finished, этот вызов не перезапишет статус.
-                // Если ошибок не было, она будет помечена как passed.
+                // Complete before-fixture (setUp)
+                // If recordFailureInCurrentFixture already marked it as failed and finished, this call will not overwrite the status.
+                // If no errors were recorded, it will be marked as passed.
                 fixtureService.completeCurrentBeforeFixture(for: testCase, status: .passed, stopTime: finishTime, issue: nil)
 
-                // Завершаем after-фикстуру (tearDown)
-                // Аналогично, если recordFailureInCurrentFixture уже пометил ее как failed и finished, статус не изменится.
-                // Если ошибок не было, она будет помечена как passed.
-                // Время остановки для tearDown также может быть finishTime, или более точное, если доступно.
+                // Complete after-fixture (tearDown)
+                // Similarly, if recordFailureInCurrentFixture already marked it as failed and finished, the status will not change.
+                // If no errors were recorded, it will be marked as passed.
+                // The stop time for tearDown can also be finishTime, or more accurately, if available.
                 fixtureService.completeCurrentAfterFixture(for: testCase, status: .passed, stopTime: finishTime, issue: nil)
 
-                // Передаем собранные issues и сам testCase в TestItWriter
+                // Pass collected issues and testCase to TestItWriter
                 await strongWriter.onTestDidFinish(for: testCase, fixtureIssues: self.currentFixtureIssues, testBodyIssues: self.currentTestBodyIssues)
             } else {
-                print("[OverallLifecycleObserver SHARED]: ERROR from testCaseDidFinish - Writer or FixtureService is nil, cannot complete fixtures or call onTestDidFinish.")
+                logger.error("ERROR from testCaseDidFinish - Writer or FixtureService is nil, cannot complete fixtures or call onTestDidFinish.")
             }
-            // Очищаем issues после обработки, готовимся к следующему тесту
+            // Clear issues after processing, prepare for next test
             self.currentTestBodyIssues = []
             self.currentFixtureIssues = []
             self.currentTestCaseName = nil
         }
     }
 
-    // Этот метод будет вызываться для каждого зарегистрированного XCTIssue
+    // This method will be called for each registered XCTIssue
     func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
-        // Сохраняем все 'issue', возникшие во время теста
-        // Убедимся, что issue относится к текущему обрабатываемому тесту, если currentTestCaseName используется для строгой проверки
-        // В данном случае, просто добавляем, так как testCaseDidFinish обработает все для завершившегося теста
-        print("[OverallLifecycleObserver SHARED]: Test case \(testCase.name) recorded issue: \(issue.compactDescription) at \(issue.sourceCodeContext.location?.fileURL.lastPathComponent ?? "unknown file"):\(issue.sourceCodeContext.location?.lineNumber ?? 0)")
-        // self.currentTestIssues.append(issue) // Удаляем старое добавление
+        // Save all 'issue', occurred during the test
+        // Ensure that issue belongs to the currently processed test, if currentTestCaseName is used for strict checking
+        // In this case, simply add it, because testCaseDidFinish will handle everything for the finished test
+        logger.info("Test case \(testCase.name) recorded issue: \(issue.compactDescription) at \(issue.sourceCodeContext.location?.fileURL.lastPathComponent ?? "unknown file"):\(issue.sourceCodeContext.location?.lineNumber ?? 0)")
+        // self.currentTestIssues.append(issue) // Remove old addition
 
         let context: String
         var isFixtureFailure = false
@@ -162,155 +165,155 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
         if let currentlyInSetUp = self.currentTestCaseInSetUp, currentlyInSetUp === testCase {
             context = "setUp"
             isFixtureFailure = true
-            print("[OverallLifecycleObserver SHARED]: Issue recorded during setUp of \(testCase.name): \(issue.compactDescription)")
-            self.currentFixtureIssues.append(issue) // Добавляем в fixtureIssues
-            Task { // Асинхронный вызов, чтобы не блокировать testCase(_:didRecord:)
+            logger.info("Issue recorded during setUp of \(testCase.name): \(issue.compactDescription)")
+            self.currentFixtureIssues.append(issue) // Add to fixtureIssues
+            Task { // Async call, to not block testCase(_:didRecord:)
                 await writer?.recordFixtureFailure(for: testCase, issue: issue, fixtureContext: context)
             }
         } else if let currentlyInTearDown = self.currentTestCaseInTearDown, currentlyInTearDown === testCase {
             context = "tearDown"
             isFixtureFailure = true
-            print("[OverallLifecycleObserver SHARED]: Issue recorded during tearDown of \(testCase.name): \(issue.compactDescription)")
-            self.currentFixtureIssues.append(issue) // Добавляем в fixtureIssues
-            Task { // Асинхронный вызов
+            logger.info("Issue recorded during tearDown of \(testCase.name): \(issue.compactDescription)")
+            self.currentFixtureIssues.append(issue) // Add to fixtureIssues
+            Task { // Async call
                 await writer?.recordFixtureFailure(for: testCase, issue: issue, fixtureContext: context)
             }
         } else {
-            // Ошибка произошла в теле теста, не в setUp или tearDown.
-            self.currentTestBodyIssues.append(issue) // Добавляем в testBodyIssues
-            print("[OverallLifecycleObserver SHARED]: Issue recorded in test body of \(testCase.name) (or outside specific setUp/tearDown context): \(issue.compactDescription)")
+            // Error occurred in the test body, not in setUp or tearDown.
+            self.currentTestBodyIssues.append(issue) // Add to testBodyIssues
+            logger.info("Issue recorded in test body of \(testCase.name) (or outside specific setUp/tearDown context): \(issue.compactDescription)")
         }
 
-        // Дальнейшая обработка isFixtureFailure может быть здесь или в writer
+        // Further processing of isFixtureFailure can be here or in writer
     }
 
     // not called on failing assertions
     func testCase(_ testCase: XCTestCase, didFailWith description: String, inFile filePath: String?, atLine lineNumber: Int) {
-        print("[OverallLifecycleObserver SHARED]: Test case FAILED: \(testCase.name) - \(description)")
+        logger.info("Test case FAILED: \(testCase.name) - \(description)")
         waitForAsyncTask {
             if let strongWriter = self.writer {
                 await strongWriter.onTestFailed(for: testCase)
             } else {
-                print("[OverallLifecycleObserver SHARED]: ERROR from testCaseDidFinish - Writer is nil, cannot call onTestFailed.")
+                logger.error("ERROR from testCaseDidFinish - Writer is nil, cannot call onTestFailed.")
             }
         }
     }
 
     func onBeforeSetup(testCase: XCTestCase) {
-        print("[OverallLifecycleObserver SHARED]: onBeforeSetup for test \(testCase.name)")
-        self.currentTestCaseInSetUp = testCase // Устанавливаем контекст setUp
+        logger.info("onBeforeSetup for test \(testCase.name)")
+        self.currentTestCaseInSetUp = testCase // Set setUp context
         // Your logic for before setup
         let success = waitForAsyncTask {
             guard let strongWriter = self.writer else {
-                print("[OverallLifecycleObserver SHARED]: ERROR from onBeforeSetup Task - Writer is nil.")
+                logger.error("ERROR from onBeforeSetup Task - Writer is nil.")
                 return
             }
             await strongWriter.onBeforeSetup(for: testCase)
         }
-        print("[OverallLifecycleObserver SHARED]: onBeforeSetup - onBeforeSetup completion success: \(success)")
+        logger.info("onBeforeSetup - onBeforeSetup completion success: \(success)")
     }
 
     func onAfterSetup(testCase: XCTestCase) {
-        print("[OverallLifecycleObserver SHARED]: onAfterSetup for \(testCase.name)")
-        self.currentTestCaseInSetUp = nil // Сбрасываем контекст setUp
-        // TODO: Возможно, здесь нужно вызвать writer?.onAfterSetup(for: testCase), если такая логика понадобится
+        logger.info("onAfterSetup for \(testCase.name)")
+        self.currentTestCaseInSetUp = nil // Reset setUp context
+        // TODO: Perhaps, here we need to call writer?.onAfterSetup(for: testCase), if such logic is needed
     }
 
     func onBeforeTeardown(testCase: XCTestCase) {
-        print("[OverallLifecycleObserver SHARED]: onBeforeTeardown for test \(testCase.name)")
-        self.currentTestCaseInTearDown = testCase // Устанавливаем контекст tearDown
+        logger.info("onBeforeTeardown for test \(testCase.name)")
+        self.currentTestCaseInTearDown = testCase // Set tearDown context
         // Your logic for before teardown
         let success = waitForAsyncTask {
             guard let strongWriter = self.writer else {
-                print("[OverallLifecycleObserver SHARED]: ERROR from onBeforeTeardown Task - Writer is nil.")
+                logger.error("ERROR from onBeforeTeardown Task - Writer is nil.")
                 return
             }
             await strongWriter.onBeforeTeardown(for: testCase)
         }
-        print("[OverallLifecycleObserver SHARED]: onBeforeTeardown - onBeforeTeardown completion success: \(success)")
+        logger.info("onBeforeTeardown - onBeforeTeardown completion success: \(success)")
     }
 
     func onAfterTeardown(testCase: XCTestCase) {
-        print("[OverallLifecycleObserver SHARED]: onAfterTeardown for \(testCase.name)")
-        self.currentTestCaseInTearDown = nil // Сбрасываем контекст tearDown
-        // TODO: Возможно, здесь нужно вызвать writer?.onAfterTeardown(for: testCase), если такая логика понадобится
+        logger.info("onAfterTeardown for \(testCase.name)")
+        self.currentTestCaseInTearDown = nil // Reset tearDown context
+        // TODO: Perhaps, here we need to call writer?.onAfterTeardown(for: testCase), if such logic is needed
     }
 
     private func setupDependencies(using bundle: Bundle, isPreferredBundle: Bool) {
-        // Если мы уже успешно инициализировались из предпочтительного бандла (из testBundleWillStart),
-        // а сейчас пришел вызов с isPreferredBundle = false (из testSuiteWillStart), то ничего не делаем.
+        // If we have already successfully initialized from the preferred bundle (from testBundleWillStart),
+        // and now we received a call with isPreferredBundle = false (from testSuiteWillStart), then do nothing.
         if appPropertiesInitialized && !isPreferredBundle && writerInitialized {
-            print("[OverallLifecycleObserver SHARED]: Dependencies already initialized, skipping setup from non-preferred bundle: \(bundle.bundleURL.lastPathComponent)")
+            logger.info("Dependencies already initialized, skipping setup from non-preferred bundle: \(bundle.bundleURL.lastPathComponent)")
             return
         }
         
-        print("[OverallLifecycleObserver SHARED]: Running setupDependencies with bundle: \(bundle.bundleURL.lastPathComponent), isPreferred: \(isPreferredBundle)")
+        logger.info("Running setupDependencies with bundle: \(bundle.bundleURL.lastPathComponent), isPreferred: \(isPreferredBundle)")
 
         if !appPropertiesInitialized {
             let propertiesFileName = "testit"
             let propertiesExtension = "properties"
-            print("[OverallLifecycleObserver SHARED]: Attempting to load AppProperties from bundle: \(bundle.bundleURL.lastPathComponent)")
+            logger.info("Attempting to load AppProperties from bundle: \(bundle.bundleURL.lastPathComponent)")
             guard let propertiesURL = bundle.url(forResource: propertiesFileName, withExtension: propertiesExtension) else {
-                print("ПРЕДУПРЕЖДЕНИЕ: Файл \(propertiesFileName).\(propertiesExtension) не найден в бандле \(bundle.bundleIdentifier ?? bundle.bundleURL.lastPathComponent). AppProperties НЕ будут инициализированы этим бандлом.")
+                logger.warning("Warning: File \(propertiesFileName).\(propertiesExtension) not found in bundle \(bundle.bundleIdentifier ?? bundle.bundleURL.lastPathComponent). AppProperties will not be initialized from this bundle.")
                 return
             }
             do {
                 let propertiesContent = try String(contentsOf: propertiesURL, encoding: .utf8)
                 AppProperties.initialize(propertiesString: propertiesContent)
-                print("[OverallLifecycleObserver SHARED]: AppProperties initialized. Content loaded from: \(propertiesURL.path)")
+                logger.info("AppProperties initialized. Content loaded from: \(propertiesURL.path)")
                 appPropertiesInitialized = true
             } catch {
-                 print("ПРЕДУПРЕЖДЕНИЕ: Ошибка чтения файла свойств \(propertiesURL.path): \(error). AppProperties НЕ будут инициализированы.")
+                logger.warning("Error reading properties file \(propertiesURL.path): \(error). AppProperties will not be initialized.")
                 return
             }
         }
 
         if !writerInitialized {
             guard appPropertiesInitialized else {
-                 print("[OverallLifecycleObserver SHARED]: ERROR - AppProperties not initialized, cannot create TestItWriter.")
+                 logger.error("ERROR - AppProperties not initialized, cannot create TestItWriter.")
                  return
             }
             writer = TestItWriter()
             writerInitialized = true
-            print("[OverallLifecycleObserver SHARED]: TestItWriter initialized.")
+            logger.info("TestItWriter initialized.")
         }
     }
 
     
     private func findXCTestBundle() -> Bundle? {
         for bundle in Bundle.allBundles {
-            // Ищем бандлы с расширением .xctest
+            // Search for bundles with .xctest extension
             if bundle.bundlePath.hasSuffix(".xctest") {
-                print("[OverallLifecycleObserver SHARED]: Found .xctest bundle via findXCTestBundle: \(bundle.bundleURL.lastPathComponent)")
+                logger.info("Found .xctest bundle via findXCTestBundle: \(bundle.bundleURL.lastPathComponent)")
                 return bundle
             }
         }
-        print("[OverallLifecycleObserver SHARED]: No .xctest bundle found via findXCTestBundle.")
+        logger.info("No .xctest bundle found via findXCTestBundle.")
         return nil
     }
 
 
-    /// Синхронно ожидает выполнения асинхронной операции с таймаутом.
+    /// Synchronously waits for the completion of an asynchronous operation with a timeout.
     /// - Parameters:
-    ///   - timeout: Максимальное время ожидания в секундах.
-    ///   - operation: Асинхронная операция для выполнения.
-    /// - Returns: `true`, если операция завершилась до таймаута, иначе `false`.
+    ///   - timeout: Maximum waiting time in seconds.
+    ///   - operation: Asynchronous operation to execute.
+    /// - Returns: `true`, if the operation completed before the timeout, otherwise `false`.
     private func waitForAsyncTask(
-        timeout: TimeInterval = 100.0, // Таймаут по умолчанию
+        timeout: TimeInterval = 500.0, 
         operation: @escaping () async -> Void
     ) -> Bool {
         let semaphore = DispatchSemaphore(value: 0)
 
         Task {
             await operation()
-            semaphore.signal() // Сигнализируем о завершении операции
+            semaphore.signal() // Signal about the completion of the operation
         }
 
-        // Ожидаем сигнала от семафора, но не дольше указанного таймаута
+        // Wait for the signal from the semaphore, but not longer than the specified timeout
         let result = semaphore.wait(timeout: .now() + timeout)
 
         if result == .timedOut {
-            print("[OverallLifecycleObserver SHARED]: waitForAsyncTask timed out after \(timeout) seconds.")
+            logger.info("waitForAsyncTask timed out after \(timeout) seconds.")
             return false
         }
         return true

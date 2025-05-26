@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-
+import os.log
 
 // IssueType
 public enum IssueTypeCopy : Int {
@@ -34,6 +34,9 @@ final class TestItWriter {
     private let executableTestService: ExecutableTestService
     private let testService: TestService
     let fixtureService: FixtureService
+
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestItWriter")
+
 
     init() {
         self.executableTestService = Adapter.getExecutableTestService()
@@ -71,26 +74,26 @@ final class TestItWriter {
     }
 
     func onTestWillStart(for testCase: XCTestCase) async {
-        print("TestItWriter.onTestWillStart called...")
+        // logger.info("TestItWriter.onTestWillStart called...")
         await onTestStart(testCase: testCase)
     }
 
     
     func onTestDidFinish(for testCase: XCTestCase, fixtureIssues: [XCTIssue], testBodyIssues: [XCTIssue]) async {
-        print("TestItWriter.onTestDidFinish called with \(fixtureIssues.count) fixture issues and \(testBodyIssues.count) test body issues.")
+        // logger.info("TestItWriter.onTestDidFinish called with \(fixtureIssues.count) fixture issues and \(testBodyIssues.count) test body issues.")
 
-        // Определяем статус и извлекаем детали из XCTIssue (теперь из testBodyIssues)
+        // Determine the status and extract details from XCTIssue (now from testBodyIssues)
         let succeeded = testCase.testRun?.hasSucceeded ?? true 
-        // testRun?.hasSucceeded будет false, если были ассерты или необработанные ошибки в теле теста.
-        // Если testRun == nil (например, тест не успел запуститься), считаем succeeded = true (не упал).
+        // testRun?.hasSucceeded will be false if there were assertions or uncaught errors in the test body.
+        // If testRun == nil (for example, the test did not start), we consider succeeded = true (did not fail).
 
         var finalStatus: ItemStatus
         var combinedMessage: String? = nil
         var combinedTrace: String? = nil
 
-        // Проверяем succeeded (которое отражает результат выполнения основного тела теста)
-        // и наличие критических issues в testBodyIssues.
-        // Ошибки фикстур уже обработаны FixtureService и повлияют на FixtureResult.
+        // Check succeeded (which reflects the result of the main test body)
+        // and the presence of critical issues in testBodyIssues.
+        // Fixture errors are already processed by FixtureService and will affect FixtureResult.
         let hasCriticalBodyIssues = testBodyIssues.contains { $0.type == .assertionFailure || $0.type == .thrownError }
 
         if !succeeded || hasCriticalBodyIssues {
@@ -99,7 +102,7 @@ final class TestItWriter {
             var messagesArray: [String] = []
             var tracesArray: [String] = []
 
-            for issue in testBodyIssues { // Используем testBodyIssues
+            for issue in testBodyIssues { // Use testBodyIssues
                 if issue.type == .assertionFailure || issue.type == .thrownError {
                     messagesArray.append(issue.compactDescription)
                     if let location = issue.sourceCodeContext.location {
@@ -122,11 +125,11 @@ final class TestItWriter {
             finalStatus = .passed
         }
 
-        // fixtureIssues можно использовать для дополнительного логирования здесь, если необходимо
+        // fixtureIssues can be used for additional logging here if needed
         if !fixtureIssues.isEmpty {
-            print("TestItWriter: \(fixtureIssues.count) issues were recorded in setUp/tearDown and handled by FixtureService.")
+            logger.info("TestItWriter: \(fixtureIssues.count) issues were recorded in setUp/tearDown and handled by FixtureService.")
             for issue in fixtureIssues {
-                print("  - Fixture Issue: \(issue.compactDescription) at \(issue.sourceCodeContext.location?.fileURL.lastPathComponent ?? "unknown"):\(issue.sourceCodeContext.location?.lineNumber ?? 0)")
+                logger.info("  - Fixture Issue: \(issue.compactDescription) at \(issue.sourceCodeContext.location?.fileURL.lastPathComponent ?? "unknown"):\(issue.sourceCodeContext.location?.lineNumber ?? 0)")
             }
         }
 
@@ -139,7 +142,7 @@ final class TestItWriter {
     }
     //  result: TestResultCommon
     func onTestFailed(for testCase: XCTestCase) async {
-        print("TestItWriter.onTestFailed called...")
+        // logger.info("TestItWriter.onTestFailed called...")
         // await testService.onTestFailed(testCase: testCase)
     }
 
@@ -151,7 +154,7 @@ final class TestItWriter {
     func onBeforeTeardown(for testCase: XCTestCase) async {
         afterTestStart = Date().timeIntervalSince1970 * 1000
         guard let classContainerId = self.lastClassContainerId else {
-            print("Error in onBeforeTeardown: lastClassContainerId is nil for test \(testCase.name)")
+            logger.error("Error in onBeforeTeardown: lastClassContainerId is nil for test \(testCase.name)")
             return
         }
         await fixtureService.onAfterTestStart(testCase: testCase, start: afterTestStart, lastClassContainerId: classContainerId)
@@ -164,13 +167,13 @@ final class TestItWriter {
         executableTestService.refreshUuid(testName: testName)
         executableTestService.setTestStatus(testName: testName)
         guard let uuid = executableTestService.getUuid(testName: testName) else {
-            print("Error: Could not get UUID for starting test: \(testName)")
+            logger.error("Error: Could not get UUID for starting test: \(testName)")
             return
         }
         await testService.onTestStart(testCase: testCase, uuid: uuid)
         
         guard let parentId = lastMainContainerId else {
-            print("Error: lastMainContainerId is nil in runContainers")
+            logger.error("Error: lastMainContainerId is nil in runContainers")
             return
         }
         let containerHash = Utils.getHash(testName)
@@ -187,7 +190,7 @@ final class TestItWriter {
         await adapterManager.createTestRunIfNeeded()
         lastMainContainerId = UUID().uuidString
         guard let parentId = lastMainContainerId else {
-            print("Error: lastMainContainerId is nil in runContainers")
+            logger.error("Error: lastMainContainerId is nil in runContainers")
             return
         }
         let mainContainer = MainContainer(uuid: parentId)

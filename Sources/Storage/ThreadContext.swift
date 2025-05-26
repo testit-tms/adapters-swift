@@ -1,17 +1,21 @@
 import Foundation
+import os.log
+
 
 
 class ThreadContext {
     private var currentContext: [String: String] = [:] 
     private let lock = NSLock()
     private var uuidStack: [String] = [] // Simple stack simulation
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "ThreadContext")
+
 
     func clear() {
         lock.lock()
         defer { lock.unlock() }
         uuidStack.removeAll()
         // currentContext.removeValue(forKey: "currentThreadId") // Example
-        print("ThreadContext STUB: clear called")
+        logger.info("ThreadContext STUB: clear called")
     }
 
     func start(_ uuid: String) {

@@ -26,7 +26,7 @@ struct StepResult: Codable, ResultWithSteps, ResultWithAttachments {
         steps = try container.decode([StepResult].self, forKey: .steps)
         linkItems = try container.decode([LinkItem].self, forKey: .linkItems)
         attachments = try container.decode([String].self, forKey: .attachments)
-        // throwable = try container.decodeIfPresent(Error.self, forKey: .throwable) // Error не Codable
+        // throwable = try container.decodeIfPresent(Error.self, forKey: .throwable) // Error is not Codable
         start = try container.decodeIfPresent(Int64.self, forKey: .start)
         stop = try container.decodeIfPresent(Int64.self, forKey: .stop)
         parameters = try container.decode([String: String].self, forKey: .parameters)
@@ -42,7 +42,7 @@ struct StepResult: Codable, ResultWithSteps, ResultWithAttachments {
         try container.encode(steps, forKey: .steps)
         try container.encode(linkItems, forKey: .linkItems)
         try container.encode(attachments, forKey: .attachments)
-        // try container.encodeIfPresent(throwable, forKey: .throwable) // Error не Codable
+        // try container.encodeIfPresent(throwable, forKey: .throwable) // Error is not Codable
         try container.encodeIfPresent(start, forKey: .start)
         try container.encodeIfPresent(stop, forKey: .stop)
         try container.encode(parameters, forKey: .parameters)

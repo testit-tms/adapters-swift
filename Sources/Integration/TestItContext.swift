@@ -147,13 +147,13 @@ extension LabelEntity {
 
 extension TestItContext {
     public static func getNamespace(from testCase: XCTestCase) -> String {
-        // Получаем bundle
+        // Take bundle
         let bundle = Bundle(for: type(of: testCase))
         
-        // Получаем имя target из bundle
+        // Take target name from bundle
         let targetName = bundle.bundleIdentifier ?? "UnknownTarget"
         
-        // Формируем namespace
+        // Form namespace
         return "\(targetName)"
     }
 }

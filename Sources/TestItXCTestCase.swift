@@ -10,11 +10,13 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
     private static var originalSetUpIMP: IMP? = nil
     private static var originalTearDownIMP: IMP? = nil
 
+    private static var originalSetUpWithErrorIMP: IMP? = nil
+    private static var originalTearDownWithErrorIMP: IMP? = nil
 
     private var initializer = TestAdapterInitializer()
 
     // MARK: - Initialization
-    
+   
 
     private static let swizzleSetupAndTeardown: Void = {
         // Swizzle setUp
@@ -30,18 +32,31 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
         method_exchangeImplementations(originalTearDown!, swizzledTearDown!)
     }()
 
+    private static let swizzleSetupAndTeardownWithError: Void = {
+        // Swizzle setUp
+        let originalSetUp = class_getInstanceMethod(TestItXCTestCase.self, #selector(setUpWithError)) // Updated class name
+        let swizzledSetUp = class_getInstanceMethod(TestItXCTestCase.self, #selector(swizzled_setUpWithError)) // Updated class name
+        originalSetUpWithErrorIMP = method_getImplementation(originalSetUp!)
+        method_exchangeImplementations(originalSetUp!, swizzledSetUp!)
+
+        // Swizzle tearDown
+        let originalTearDown = class_getInstanceMethod(TestItXCTestCase.self, #selector(tearDownWithError)) // Updated class name
+        let swizzledTearDown = class_getInstanceMethod(TestItXCTestCase.self, #selector(swizzled_tearDownWithError)) // Updated class name
+        originalTearDownWithErrorIMP = method_getImplementation(originalTearDown!)
+        method_exchangeImplementations(originalTearDown!, swizzledTearDown!)
+    }()
+
 
     // Ensure swizzling happens automatically
     override open class func setUp() {
         super.setUp()
         
         _ = TestItXCTestCase.swizzleSetupAndTeardown // Updated class name
+        _ = TestItXCTestCase.swizzleSetupAndTeardownWithError // Updated class name
     }
-
 
     @objc func swizzled_setUp() {
         // Tracking logic before user-defined `setUp`
-        print("swizzled_setUp started")
  
         logLifecycleEvent("TestIt setUp started for \(self.name)") // Updated log message
         // executing before actual setup override
@@ -72,8 +87,39 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
         logLifecycleEvent("TestIt tearDown completed for \(self.name)") // Updated log message
     }
 
+    @objc func swizzled_setUpWithError() {
+        // Tracking logic before user-defined `setUp`
+ 
+        logLifecycleEvent("TestIt setUpWithError started for \(self.name)") // Updated log message
+        // executing before actual setup override
+        OverallLifecycleObserver.shared.onBeforeSetup(testCase: self)
+
+        // Call the original `setUp` implementation
+        if let originalIMP = TestItXCTestCase.originalSetUpIMP { // Updated class name
+            let originalSetUpFunc = unsafeBitCast(originalIMP, to: (@convention(c) (AnyObject, Selector) -> Void).self)
+            originalSetUpFunc(self, #selector(XCTestCase.setUp))
+        }
+
+        // Additional tracking logic after `setUp`
+        OverallLifecycleObserver.shared.onAfterSetup(testCase: self)
+        logLifecycleEvent("TestIt setUpWithError completed for \(self.name)") // Updated log message
+    }
+
+    @objc func swizzled_tearDownWithError() {
+        logLifecycleEvent("TestIt tearDownWithError started for \(self.name)") // Updated log message
+        OverallLifecycleObserver.shared.onBeforeTeardown(testCase: self)
+
+        // Call the original `tearDown` implementation
+        if let originalIMP = TestItXCTestCase.originalTearDownIMP { // Updated class name
+            let originalTearDownFunc = unsafeBitCast(originalIMP, to: (@convention(c) (AnyObject, Selector) -> Void).self)
+            originalTearDownFunc(self, #selector(XCTestCase.tearDown))
+        }
+
+        OverallLifecycleObserver.shared.onAfterTeardown(testCase: self)
+        logLifecycleEvent("TestIt tearDownWithError completed for \(self.name)") // Updated log message
+    }
+
     func logLifecycleEvent(_ message: String) {
-        print("[Lifecycle Event]: \(message)")
         // Add logic to send data to a server or save logs
     }
 } 
