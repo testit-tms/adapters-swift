@@ -8,7 +8,7 @@ XCTest support only for now
 | TestIT   | Adapters  |
 |----------|-----------|
 | 5.3      | 0.1.x     |
-| Cloud    | 0.1.x     |
+| Cloud    | 0.2.x     |
 
 
 ## Examples
