@@ -366,6 +366,10 @@ enum Converter {
          let updateRequests = models.map { AttachmentUpdateRequest(id: $0.id) }
          return updateRequests.isEmpty ? nil : updateRequests // Return nil if empty
     }
+    
+    private static func convertStatusApiTypeToStatusType(apiType: TestStatusApiType) -> TestStatusType {
+        return TestStatusType(rawValue: apiType.rawValue)!
+    }
 
     static func convertAutoTestApiResultToAutoTestModel(autoTestApiResult: AutoTestApiResult?) -> AutoTestModel? {
         if let apiResult = autoTestApiResult {
@@ -401,6 +405,11 @@ enum Converter {
             lastTestResultId: apiResult.lastTestResultId,
             lastTestResultConfiguration: apiResult.lastTestResultConfiguration.map { ConfigurationShortModel(id: $0.id, name: $0.name) },
             lastTestResultOutcome: apiResult.lastTestResultOutcome ?? "", // Use unwrapped value from guard
+            lastTestResultStatus: apiResult.lastTestResultStatus.map {
+                TestStatusModel(id: $0.id, name: $0.name,
+                                type: convertStatusApiTypeToStatusType(apiType: $0.type),
+                                isSystem: $0.isSystem, code: $0.code, description: $0.description)
+            }!,
             stabilityPercentage: apiResult.stabilityPercentage.map { Int($0) },
             externalId: externalId, // Use unwrapped externalId from guard
             links: convertLinkApiResultsToPutLinks(apiResult.links ?? []),
