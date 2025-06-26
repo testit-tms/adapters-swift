@@ -224,14 +224,19 @@ class TmsApiClient: ApiClient {
 
     func updateAutoTest(model: AutoTestPutModel) throws {
         Self.logger.debug("TmsApiClient: updateAutoTest... with externalId: \(model.externalId)")
+        
+        // Escape HTML in model before sending
+        var escapedModel = model
+        escapedModel.escapeHtmlProperties()
+        
         // Log each property of AutoTestPutModel
-        Self.logger.debug("AutoTestPutModel details - id: \(model.id?.uuidString ?? "nil"), externalId: \(model.externalId), projectId: \(model.projectId.uuidString), name: \(model.name), namespace: \(model.namespace ?? "nil"), classname: \(model.classname ?? "nil"), title: \(model.title ?? "nil"), description: \(model.description ?? "nil"), isFlaky: \(model.isFlaky?.description ?? "nil"), externalKey: \(model.externalKey ?? "nil")")
-        Self.logger.debug("AutoTestPutModel links: \(String(describing: model.links))")
-        Self.logger.debug("AutoTestPutModel steps: \(String(describing: model.steps))")
-        Self.logger.debug("AutoTestPutModel setup: \(String(describing: model.setup))")
-        Self.logger.debug("AutoTestPutModel teardown: \(String(describing: model.teardown))")
-        Self.logger.debug("AutoTestPutModel labels: \(String(describing: model.labels))")
-        Self.logger.debug("AutoTestPutModel workItemIdsForLinkWithAutoTest: \(String(describing: model.workItemIdsForLinkWithAutoTest))")
+        Self.logger.debug("AutoTestPutModel details - id: \(escapedModel.id?.uuidString ?? "nil"), externalId: \(escapedModel.externalId), projectId: \(escapedModel.projectId.uuidString), name: \(escapedModel.name), namespace: \(escapedModel.namespace ?? "nil"), classname: \(escapedModel.classname ?? "nil"), title: \(escapedModel.title ?? "nil"), description: \(escapedModel.description ?? "nil"), isFlaky: \(escapedModel.isFlaky?.description ?? "nil"), externalKey: \(escapedModel.externalKey ?? "nil")")
+        Self.logger.debug("AutoTestPutModel links: \(String(describing: escapedModel.links))")
+        Self.logger.debug("AutoTestPutModel steps: \(String(describing: escapedModel.steps))")
+        Self.logger.debug("AutoTestPutModel setup: \(String(describing: escapedModel.setup))")
+        Self.logger.debug("AutoTestPutModel teardown: \(String(describing: escapedModel.teardown))")
+        Self.logger.debug("AutoTestPutModel labels: \(String(describing: escapedModel.labels))")
+        Self.logger.debug("AutoTestPutModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
 
         lock.lock()
         defer { lock.unlock() }
@@ -239,7 +244,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = AutoTestsAPI.updateAutoTest(autoTestPutModel: model, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
+        _ = AutoTestsAPI.updateAutoTest(autoTestPutModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
             if let error = error {
                 Self.logger.error("Error updating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -260,6 +265,10 @@ class TmsApiClient: ApiClient {
     func createAutoTest(model: AutoTestPostModel) throws -> String {
         Self.logger.debug("TmsApiClient: createAutoTest... with externalId: \(model.externalId)")
 
+        // Escape HTML in model before sending
+        var escapedModel = model
+        escapedModel.escapeHtmlProperties()
+
         lock.lock()
         defer { lock.unlock() }
         
@@ -267,7 +276,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var createdAutoTestModel: AutoTestModel?
         
-        _ = AutoTestsAPI.createAutoTest(autoTestPostModel: model, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AutoTestsAPI.createAutoTest(autoTestPostModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error creating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -495,6 +504,12 @@ class TmsApiClient: ApiClient {
     func sendTestResults(testRunUuid: String, models: [AutoTestResultsForTestRunModel]) throws -> [String] {
         Self.logger.debug("TmsApiClient: sendTestResults... with testRunUuid: \(testRunUuid) and models: \(models)")
 
+        // Escape HTML in models before sending
+        var escapedModels = models
+        for i in 0..<escapedModels.count {
+            escapedModels[i].escapeHtmlProperties()
+        }
+
         // No lock needed according to Kotlin version? Consider if needed for safety.
         guard let runUUID = UUID(uuidString: testRunUuid) else {
              Self.logger.error("Cannot send results: Invalid Test Run UUID format \"\(testRunUuid)\"")
@@ -505,7 +520,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var resultUUIDsFromApi: [UUID]?
         
-        _ = TestRunsAPI.setAutoTestResultsForTestRun(id: runUUID, autoTestResultsForTestRunModel: models, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = TestRunsAPI.setAutoTestResultsForTestRun(id: runUUID, autoTestResultsForTestRunModel: escapedModels, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error sending test results for test run \(testRunUuid): \(error.localizedDescription)")
                 operationError = error
@@ -642,12 +657,16 @@ class TmsApiClient: ApiClient {
     func updateTestResult(uuid: UUID, model: TestResultUpdateV2Request) throws {
         Self.logger.debug("TmsApiClient: updateTestResult... with uuid: \(uuid)")
 
+        // Escape HTML in model before sending
+        var escapedModel = model
+        escapedModel.escapeHtmlProperties()
+
          // No lock needed according to Kotlin version? Consider if needed for safety.
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = TestResultsAPI.apiV2TestResultsIdPut(id: uuid, testResultUpdateV2Request: model, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+        _ = TestResultsAPI.apiV2TestResultsIdPut(id: uuid, testResultUpdateV2Request: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
             if let error = error {
                 Self.logger.error("Error updating test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
