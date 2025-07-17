@@ -196,21 +196,19 @@ extension AutoTestPostModel: HtmlEscapable {
 
 extension AutoTestStepModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
-        self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
+        self.title = HtmlEscapeUtils.escapeHtmlTags(self.title) ?? ""
         self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
-        self.expected = HtmlEscapeUtils.escapeHtmlTags(self.expected)
-        self.testData = HtmlEscapeUtils.escapeHtmlTags(self.testData)
-        
-        // Handle attachments array if present
-        // Attachments usually contain file data, so we might not want to escape them
-        // but if they have descriptive text fields, those should be escaped
+        if (steps != nil) {
+            for i in 0..<steps!.count {
+                steps![i].escapeHtmlProperties()
+            }
+        }
     }
 }
 
 extension LabelPostModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
-        self.value = HtmlEscapeUtils.escapeHtmlTags(self.value) ?? self.value
     }
 }
 
@@ -223,10 +221,19 @@ extension LinkPostModel: HtmlEscapable {
     }
 }
 
+extension LinkPutModel: HtmlEscapable {
+    public mutating func escapeHtmlProperties() {
+        self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
+        self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
+        // URL field should not be escaped as it might break the URL
+        // self.url = HtmlEscapeUtils.escapeHtmlTags(self.url)
+    }
+}
+
 extension AutoTestResultsForTestRunModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.message = HtmlEscapeUtils.escapeHtmlTags(self.message)
-        self.trace = HtmlEscapeUtils.escapeHtmlTags(self.trace)
+        self.traces = HtmlEscapeUtils.escapeHtmlTags(self.traces)
         
         // Handle setup results
         if var setupResults = self.setupResults {
@@ -264,14 +271,62 @@ extension AutoTestResultsForTestRunModel: HtmlEscapable {
 
 extension StepResult: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        self.name = HtmlEscapeUtils.escapeHtmlTags(self.name)
+        self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
+    }
+}
+
+extension AttachmentPutModelAutoTestStepResultsModel: HtmlEscapable {
+    public mutating func escapeHtmlProperties() {
         self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
         self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
-        self.info = HtmlEscapeUtils.escapeHtmlTags(self.info)
         
-        // Handle parameters if they exist
-        if let parameters = self.parameters {
-            self.parameters = HtmlEscapeUtils.escapeHtmlInStringArray(parameters)
+        // Handle step results array
+        if var stepResultsArray = self.stepResults {
+            for i in 0..<stepResultsArray.count {
+                stepResultsArray[i].escapeHtmlProperties()
+            }
+            self.stepResults = stepResultsArray
         }
+        
+        // Handle parameters if they exist - escape dictionary values
+        if let parameters = self.parameters {
+            var escapedParameters: [String: String] = [:]
+            for (key, value) in parameters {
+                escapedParameters[key] = HtmlEscapeUtils.escapeHtmlTags(value) ?? value
+            }
+            self.parameters = escapedParameters
+        }
+    }
+}
+
+extension AutoTestStepResultUpdateRequest: HtmlEscapable {
+    public mutating func escapeHtmlProperties() {
+        self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
+        self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
+        
+        // Handle step results array
+        if var stepResultsArray = self.stepResults {
+            for i in 0..<stepResultsArray.count {
+                stepResultsArray[i].escapeHtmlProperties()
+            }
+            self.stepResults = stepResultsArray
+        }
+        
+        // Handle parameters if they exist - escape dictionary values
+        if let parameters = self.parameters {
+            var escapedParameters: [String: String] = [:]
+            for (key, value) in parameters {
+                escapedParameters[key] = HtmlEscapeUtils.escapeHtmlTags(value) ?? value
+            }
+            self.parameters = escapedParameters
+        }
+    }
+}
+
+extension StepResultApiModel: HtmlEscapable {
+    public mutating func escapeHtmlProperties() {
+        self.outcome = HtmlEscapeUtils.escapeHtmlTags(self.outcome) ?? ""
     }
 }
 
