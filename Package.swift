@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "testit-adapters-swift",
     platforms: [
-        .iOS(.v11),
+        .iOS(.v14),
         .macOS(.v11),
         .tvOS(.v11),
         .watchOS(.v4),
