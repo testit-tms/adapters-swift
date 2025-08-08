@@ -7,9 +7,9 @@ XCTest support only for now
 
 | TestIT   | Adapters      |
 |----------|---------------|
-| 5.3      | 0.1.x         |
-| 5.4      | 0.3.0-tms.5.4 |
-| Cloud    | 0.3.1         |
+| 5.3      | 0.1.2-tms.5.3 |
+| 5.4      | 0.3.2-tms.5.4 |
+| Cloud    | 0.3.2         |
 
 
 
