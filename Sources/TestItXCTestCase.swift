@@ -3,10 +3,7 @@ import ObjectiveC
 
 /// A custom base class for XCTestCases that intercepts lifecycle events (setUp, tearDown, test execution)
 /// using Objective-C method swizzling.
-///
-/// This class provides hooks (`logLifecycleEvent`) to integrate external systems (like the TestIt adapter)
-/// by allowing custom logic to be executed before and after standard test lifecycle methods.
-open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
+open class TestItXCTestCase: XCTestCase {
     private static var originalSetUpIMP: IMP? = nil
     private static var originalTearDownIMP: IMP? = nil
 
@@ -58,7 +55,6 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
     @objc func swizzled_setUp() {
         // Tracking logic before user-defined `setUp`
  
-        logLifecycleEvent("TestIt setUp started for \(self.name)") // Updated log message
         // executing before actual setup override
         OverallLifecycleObserver.shared.onBeforeSetup(testCase: self)
 
@@ -70,11 +66,9 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
 
         // Additional tracking logic after `setUp`
         OverallLifecycleObserver.shared.onAfterSetup(testCase: self)
-        logLifecycleEvent("TestIt setUp completed for \(self.name)") // Updated log message
     }
 
     @objc func swizzled_tearDown() {
-        logLifecycleEvent("TestIt tearDown started for \(self.name)") // Updated log message
         OverallLifecycleObserver.shared.onBeforeTeardown(testCase: self)
 
         // Call the original `tearDown` implementation
@@ -84,13 +78,11 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
         }
 
         OverallLifecycleObserver.shared.onAfterTeardown(testCase: self)
-        logLifecycleEvent("TestIt tearDown completed for \(self.name)") // Updated log message
     }
 
     @objc func swizzled_setUpWithError() throws {
         // Tracking logic before user-defined `setUp`
  
-        logLifecycleEvent("TestIt setUpWithError started for \(self.name)") // Updated log message
         // executing before actual setup override
         OverallLifecycleObserver.shared.onBeforeSetup(testCase: self)
 
@@ -102,11 +94,9 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
 
         // Additional tracking logic after `setUp`
         OverallLifecycleObserver.shared.onAfterSetup(testCase: self)
-        logLifecycleEvent("TestIt setUpWithError completed for \(self.name)") // Updated log message
     }
 
     @objc func swizzled_tearDownWithError() throws {
-        logLifecycleEvent("TestIt tearDownWithError started for \(self.name)") // Updated log message
         OverallLifecycleObserver.shared.onBeforeTeardown(testCase: self)
 
         // Call the original `tearDown` implementation
@@ -116,10 +106,6 @@ open class TestItXCTestCase: XCTestCase { // Renamed from CustomTestCase
         }
 
         OverallLifecycleObserver.shared.onAfterTeardown(testCase: self)
-        logLifecycleEvent("TestIt tearDownWithError completed for \(self.name)") // Updated log message
     }
 
-    func logLifecycleEvent(_ message: String) {
-        // Add logic to send data to a server or save logs
-    }
 } 
