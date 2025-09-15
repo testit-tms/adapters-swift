@@ -32,7 +32,7 @@ enum Converter {
             description: result.description,
             labels: labelsPostConvert(result.labels),
             isFlaky: false, 
-            externalKey: nil 
+            externalKey: result.externalKey
         )
         return model
     }
@@ -69,7 +69,7 @@ enum Converter {
             description: result.description,
             labels: labelsPostConvert(result.labels),
             isFlaky: isFlaky,
-            externalKey: nil
+            externalKey: result.externalKey
         )
         return model
     }
