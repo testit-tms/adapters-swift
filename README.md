@@ -9,11 +9,11 @@ XCTest support only for now
 |----------|---------------|
 | 5.3      | 0.1.2-tms.5.3 |
 | 5.4      | 0.3.2-tms.5.4 |
-| Cloud    | 0.3.3         |
-
+| Cloud    | 0.3.5         |
 
 
 ## Examples
+
 
 You can use our project example as reference and your working template with all configured in Xcode. 
 
