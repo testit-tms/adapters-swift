@@ -37,7 +37,8 @@ final class TestService {
             spaceName: spaceName,
             labels: [],
             linkItems: [],
-            name: testName
+            name: testName,
+            externalKey: Utils.genExternalKey(from: testCase)
         )
         
         uuids[testCase.name] = uuid

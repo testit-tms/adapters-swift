@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import os.log
+import XCTest
 
 
 
@@ -33,5 +34,21 @@ enum Utils {
         }
         let digest = SHA256.hash(data: data)
         return digest.map { String(format: "%02x", $0) }.joined().uppercased()
+    }
+    
+    /// Generates external key in format "scheme/testClass/testMethod" for XCTestCase
+    static func genExternalKey(from testCase: XCTestCase) -> String {
+        // Get scheme/target name from bundle
+        let bundle = Bundle(for: type(of: testCase))
+        let schemeName = bundle.bundleIdentifier ?? "UnknownScheme"
+        
+        // Get test class name
+        let className = String(describing: type(of: testCase))
+        
+        // Get test method name (testCase.name contains the full method name)
+        let methodName = testCase.name
+        
+        // Combine all parts with '/' separator
+        return "\(schemeName)/\(className)/\(methodName)"
     }
 }
