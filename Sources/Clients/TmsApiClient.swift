@@ -571,7 +571,7 @@ class TmsApiClient: ApiClient {
 
         // Check file permissions
         do {
-            let attributes = try FileManager.default.attributesOfItem(atPath: path)
+            // let attributes = try FileManager.default.attributesOfItem(atPath: path)
             //Self.logger.debug("File attributes: \(attributes)")
             
             // Check read permissions

@@ -92,10 +92,9 @@ public class TestItContextBuilder {
         return self
     }
 
-    public func build(_ test: XCTestCase) -> TestItContext {
+    public func build(_ test: XCTestCase) {
         let key = test.name
         TestItContextBuilder.storedContexts[key] = context
-        return context
     }
 
     public static func getContext(forKey key: String) -> TestItContext? {

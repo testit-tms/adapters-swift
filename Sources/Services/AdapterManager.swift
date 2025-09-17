@@ -78,10 +78,10 @@ class AdapterManager {
 
         Self.logger.debug("Attempting to establish Test Run ID...")
 
-        lock.lock()
-        let initialTestRunId = self.clientConfiguration.testRunId 
-        let isConfigTestRunIdMissing = initialTestRunId.isEmpty || initialTestRunId.lowercased() == "null"
-        lock.unlock()
+        let (initialTestRunId, isConfigTestRunIdMissing) = lock.withLock {
+            let testRunId = self.clientConfiguration.testRunId
+            return (testRunId, testRunId.isEmpty || testRunId.lowercased() == "null")
+        }
 
         if !isConfigTestRunIdMissing && self.clientConfiguration.mode != "2" {
             Self.logger.info("Test Run ID already provided in configuration: \(initialTestRunId). Using this ID.")
@@ -93,15 +93,15 @@ class AdapterManager {
 
         Self.logger.debug("Test Run ID not found in configuration. Checking TEST_RUN_AUTO_ID environment variable.")
         let envVarName = "TEST_RUN_AUTO_ID"
-        var envTestRunId: String? = nil
+        // var envTestRunId: String? = nil
         if let envValue = ProcessInfo.processInfo.environment[envVarName], !envValue.isEmpty {
-            envTestRunId = envValue
+            // envTestRunId = envValue
             Self.logger.info("Found Test Run ID in environment variable \(envVarName): \(envValue). Using this ID.")
             
-            lock.lock()
-            self.clientConfiguration.testRunId = envValue
-            self.writer?.setTestRun(testRunId: envValue)
-            lock.unlock()
+            lock.withLock {
+                self.clientConfiguration.testRunId = envValue
+                self.writer?.setTestRun(testRunId: envValue)
+            }
             return
         }
 
@@ -113,10 +113,10 @@ class AdapterManager {
             let response = try await self.client.createTestRun() // Async call
             let newTestRunId = response.id.uuidString
             Self.logger.debug("client.createTestRun() completed. New Test Run ID: \(newTestRunId)")
-            lock.lock()
-            self.clientConfiguration.testRunId = newTestRunId
-            self.writer?.setTestRun(testRunId: newTestRunId)
-            lock.unlock()
+            lock.withLock {
+                self.clientConfiguration.testRunId = newTestRunId
+                self.writer?.setTestRun(testRunId: newTestRunId)
+            }
         } catch {
             Self.logger.error("Cannot start the launch (error during createTestRun or update): \(error.localizedDescription)")
         }
@@ -185,12 +185,12 @@ class AdapterManager {
     func startClassContainer(parentUuid: String, container: ClassContainer) {
         guard adapterConfig.shouldEnableTmsIntegration, let uuid = container.uuid else { return }
 
-        lock.lock()
-        if var parent = storage.getTestsContainer(parentUuid) {
-            parent.children.append(uuid)
-            storage.put(parentUuid, parent) // Update parent
+        lock.withLock {
+            if var parent = storage.getTestsContainer(parentUuid) {
+                parent.children.append(uuid)
+                storage.put(parentUuid, parent) // Update parent
+            }
         }
-        lock.unlock()
         
         var mutableContainer = container
         mutableContainer.start = Int64(Date().timeIntervalSince1970 * 1000)
@@ -221,15 +221,18 @@ class AdapterManager {
         Self.logger.debug("Update class container \(uuid)")
 
         // Use lock to ensure thread safety if storage is not inherently thread-safe
-        lock.lock()
-        guard var container = storage.getClassContainer(uuid) else {
-            lock.unlock()
-            Self.logger.debug("Could not update class container: container with uuid \(uuid) not found")
-            return
+        let success = lock.withLock {
+            guard var container = storage.getClassContainer(uuid) else {
+                return false
+            }
+            update(&container)
+            storage.put(uuid, container) // Put the modified container back
+            return true
         }
-        update(&container)
-        storage.put(uuid, container) // Put the modified container back
-        lock.unlock()
+        
+        if !success {
+            Self.logger.debug("Could not update class container: container with uuid \(uuid) not found")
+        }
     }
 
     // MARK: - Test Case Lifecycle
@@ -282,15 +285,18 @@ class AdapterManager {
 
         Self.logger.debug("Update test case \(uuid)")
         
-        lock.lock()
-        guard var testResult = storage.getTestResult(uuid) else {
-            lock.unlock()
-            Self.logger.error("Could not update test case: test case with uuid \(uuid) not found")
-            return
+        let success = lock.withLock {
+            guard var testResult = storage.getTestResult(uuid) else {
+                return false
+            }
+            update(&testResult)
+            storage.put(uuid, testResult) // Put the modified result back
+            return true
         }
-        update(&testResult)
-        storage.put(uuid, testResult) // Put the modified result back
-        lock.unlock()
+        
+        if !success {
+            Self.logger.error("Could not update test case: test case with uuid \(uuid) not found")
+        }
     }
 
     func stopTestCase(uuid: String) {
@@ -327,27 +333,27 @@ class AdapterManager {
     // This requires the container to be mutable or re-stored after modification.
 
     private func addFixtureToMainContainer(parentUuid: String, fixture: FixtureResult, type: MainFixtureType) {
-        lock.lock()
-        defer { lock.unlock() }
-        guard var container = storage.getTestsContainer(parentUuid) else { return }
-        switch type {
-            case .beforeMethods: container.beforeMethods.append(fixture)
-            case .afterMethods: container.afterMethods.append(fixture)
+        lock.withLock {
+            guard var container = storage.getTestsContainer(parentUuid) else { return }
+            switch type {
+                case .beforeMethods: container.beforeMethods.append(fixture)
+                case .afterMethods: container.afterMethods.append(fixture)
+            }
+            storage.put(parentUuid, container)
         }
-        storage.put(parentUuid, container)
     }
     
     private func addFixtureToClassContainer(parentUuid: String, fixture: FixtureResult, type: ClassFixtureType) {
-        lock.lock()
-        defer { lock.unlock() }
-        guard var container = storage.getClassContainer(parentUuid) else { return }
-        switch type {
-            case .beforeClass: container.beforeClassMethods.append(fixture)
-            case .afterClass: container.afterClassMethods.append(fixture)
-            case .beforeEach: container.beforeEachTest.append(fixture)
-            case .afterEach: container.afterEachTest.append(fixture)
+        lock.withLock {
+            guard var container = storage.getClassContainer(parentUuid) else { return }
+            switch type {
+                case .beforeClass: container.beforeClassMethods.append(fixture)
+                case .afterClass: container.afterClassMethods.append(fixture)
+                case .beforeEach: container.beforeEachTest.append(fixture)
+                case .afterEach: container.afterEachTest.append(fixture)
+            }
+            storage.put(parentUuid, container)
         }
-         storage.put(parentUuid, container)
     }
 
     private enum MainFixtureType { case beforeMethods, afterMethods }
@@ -411,15 +417,18 @@ class AdapterManager {
         guard adapterConfig.shouldEnableTmsIntegration else { return }
         Self.logger.debug("Update fixture \(uuid)")
 
-        lock.lock()
-        guard var fixture = storage.getFixture(uuid) else {
-            lock.unlock()
-            Self.logger.error("Could not update test fixture: test fixture with uuid \(uuid) not found")
-            return
+        let success = lock.withLock {
+            guard var fixture = storage.getFixture(uuid) else {
+                return false
+            }
+            update(&fixture)
+            storage.put(uuid, fixture) // Put the modified fixture back
+            return true
         }
-        update(&fixture)
-        storage.put(uuid, fixture) // Put the modified fixture back
-        lock.unlock()
+        
+        if !success {
+            Self.logger.error("Could not update test fixture: test fixture with uuid \(uuid) not found")
+        }
     }
 
     func stopFixture(uuid: String) {

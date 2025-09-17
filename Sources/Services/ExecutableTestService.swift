@@ -46,7 +46,7 @@ final class ExecutableTestService {
     func onTestIgnoredRefreshIfNeed(testName: String) {
         lock.lock()
         defer { lock.unlock() }
-        var executable = currentTests[testName]
+        let executable = currentTests[testName]
 
         if executable?.isAfter() == true {
             let newTest = ExecutableTest() 
