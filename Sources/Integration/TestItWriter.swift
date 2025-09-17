@@ -148,7 +148,7 @@ final class TestItWriter {
 
     func onBeforeSetup(for testCase: XCTestCase) async {
         beforeTestStart = Date().timeIntervalSince1970 * 1000
-        await fixtureService.onBeforeTestStart(testCase: testCase, start: beforeTestStart, lastClassContainerId: lastClassContainerId!)
+        fixtureService.onBeforeTestStart(testCase: testCase, start: beforeTestStart, lastClassContainerId: lastClassContainerId!)
     }
 
     func onBeforeTeardown(for testCase: XCTestCase) async {
@@ -157,7 +157,7 @@ final class TestItWriter {
             logger.error("Error in onBeforeTeardown: lastClassContainerId is nil for test \(testCase.name)")
             return
         }
-        await fixtureService.onAfterTestStart(testCase: testCase, start: afterTestStart, lastClassContainerId: classContainerId)
+        fixtureService.onAfterTestStart(testCase: testCase, start: afterTestStart, lastClassContainerId: classContainerId)
     }
 
     // MARK: - Private Helpers
@@ -179,7 +179,7 @@ final class TestItWriter {
         let containerHash = Utils.getHash(testName)
         lastClassContainerId = containerHash
         let classContainer = ClassContainer(uuid: containerHash)
-        await adapterManager.startClassContainer(parentUuid: parentId, container: classContainer)
+        adapterManager.startClassContainer(parentUuid: parentId, container: classContainer)
         adapterManager.updateClassContainer(uuid: containerHash) { container in
             container.children.append(uuid)
         }
@@ -194,19 +194,19 @@ final class TestItWriter {
             return
         }
         let mainContainer = MainContainer(uuid: parentId)
-        await adapterManager.startMainContainer(container: mainContainer)
+        adapterManager.startMainContainer(container: mainContainer)
 
         let rootHash = Utils.getHash(rootTestName)
         lastClassContainerId = rootHash
         let classContainer = ClassContainer(uuid: rootHash)
-        await adapterManager.startClassContainer(parentUuid: parentId, container: classContainer)
+        adapterManager.startClassContainer(parentUuid: parentId, container: classContainer)
     }
 
     private func stopContainers(rootTestName: String) async {
         let rootHash = Utils.getHash(rootTestName)
-        await adapterManager.stopClassContainer(uuid: rootHash)
+        adapterManager.stopClassContainer(uuid: rootHash)
         if let mainId = lastMainContainerId {
-             await adapterManager.stopMainContainer(uuid: mainId)
+             adapterManager.stopMainContainer(uuid: mainId)
         }
     }
 }

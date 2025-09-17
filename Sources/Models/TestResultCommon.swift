@@ -29,10 +29,11 @@ struct TestResultCommon: Codable, ResultWithSteps {
     var parameters: [String: String] = [:]
     var automaticCreationTestCases: Bool = false
     var externalKey: String? = nil
+    var originalTestName: String = ""
 
     // Using CodingKeys for mapping private properties if encoding/decoding is needed
     enum CodingKeys: String, CodingKey {
-        case uuid, externalId, workItemIds, className, spaceName, labels, linkItems, resultLinks, attachments, name, title, message, itemStatus, itemStage, description, steps, start, stop, throwable, parameters, automaticCreationTestCases, externalKey
+        case uuid, externalId, workItemIds, className, spaceName, labels, linkItems, resultLinks, attachments, name, title, message, itemStatus, itemStage, description, steps, start, stop, throwable, parameters, automaticCreationTestCases, externalKey, originalTestName
     }
 
     // Initializer for decoding
@@ -60,10 +61,11 @@ struct TestResultCommon: Codable, ResultWithSteps {
         parameters = try container.decode([String: String].self, forKey: .parameters)
         automaticCreationTestCases = try container.decode(Bool.self, forKey: .automaticCreationTestCases)
         externalKey = try container.decodeIfPresent(String.self, forKey: .externalKey)
+        originalTestName = try container.decode(String.self, forKey: .originalTestName)
     }
     
     // Initializer for creating an instance
-    init(uuid: String? = nil, externalId: String = "", workItemIds: [String] = [], className: String = "", spaceName: String = "", labels: [Label] = [], linkItems: [LinkItem] = [], resultLinks: [LinkItem] = [], attachments: [String] = [], name: String = "", title: String = "", message: String = "", itemStatus: ItemStatus? = nil, itemStage: ItemStage? = nil, description: String = "", steps: [StepResult] = [], start: Int64 = 0, stop: Int64 = 0, throwable: Error? = nil, parameters: [String : String] = [:], automaticCreationTestCases: Bool = false, externalKey: String? = nil) {
+    init(uuid: String? = nil, externalId: String = "", workItemIds: [String] = [], className: String = "", spaceName: String = "", labels: [Label] = [], linkItems: [LinkItem] = [], resultLinks: [LinkItem] = [], attachments: [String] = [], name: String = "", title: String = "", message: String = "", itemStatus: ItemStatus? = nil, itemStage: ItemStage? = nil, description: String = "", steps: [StepResult] = [], start: Int64 = 0, stop: Int64 = 0, throwable: Error? = nil, parameters: [String : String] = [:], automaticCreationTestCases: Bool = false, externalKey: String? = nil, originalTestName: String = "") {
         self.uuid = uuid
         self.externalId = externalId
         self.workItemIds = workItemIds
@@ -86,6 +88,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         self.parameters = parameters
         self.automaticCreationTestCases = automaticCreationTestCases
         self.externalKey = externalKey
+        self.originalTestName = originalTestName
     }
 
 
@@ -114,6 +117,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         try container.encode(parameters, forKey: .parameters)
         try container.encode(automaticCreationTestCases, forKey: .automaticCreationTestCases)
         try container.encodeIfPresent(externalKey, forKey: .externalKey)
+        try container.encode(originalTestName, forKey: .originalTestName)
     }
 
 
@@ -148,5 +152,6 @@ extension TestResultCommon {
         self.linkItems = context.links ?? self.linkItems
         self.resultLinks = context.resultLinks ?? self.resultLinks
         self.externalKey = context.externalKey ?? self.externalKey
+        self.originalTestName = self.name
     }
 }

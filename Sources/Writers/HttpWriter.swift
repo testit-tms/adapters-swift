@@ -92,14 +92,14 @@ class HttpWriter: Writer {
                 result: testResultCommon, configurationId: configId, setupResults: nil, teardownResults: nil
             )
 
-            var resultsForApi: [AutoTestResultsForTestRunModel] = [autoTestResultsModel!]
+            let resultsForApi: [AutoTestResultsForTestRunModel] = [autoTestResultsModel!]
             
             
 
-            Self.logger.debug("Sending result by testRunId: \(self.configuration.testRunId ?? "nil")")
+            Self.logger.debug("Sending result by testRunId: \(self.configuration.testRunId)")
             
             let testRunUuidString = configuration.testRunId
-            let runId = UUID(uuidString: testRunUuidString) 
+            // let runId = UUID(uuidString: testRunUuidString)
             
             let idsSentToApi = try client.sendTestResults(testRunUuid: testRunUuidString, models: resultsForApi) // Assuming returns [String]?
             if let firstIdString = idsSentToApi.first, let firstId = UUID(uuidString: firstIdString) {
@@ -141,7 +141,7 @@ class HttpWriter: Writer {
         Self.logger.debug("writeClass started...")
         container.children.forEach { testUuidString in
 
-            let testUuid = UUID(uuidString: testUuidString)
+            // let testUuid = UUID(uuidString: testUuidString)
             let testResultOpt = storage.getTestResult(testUuidString)
             let testResult = testResultOpt
 
@@ -152,12 +152,12 @@ class HttpWriter: Writer {
                     return
                 }
 
-                var beforeClassFixtures = Converter.convertFixture(fixtures: container.beforeClassMethods, parentUuid: nil) ?? []
-                let beforeEachFixtures = Converter.convertFixture(fixtures: container.beforeEachTest, parentUuid: testUuidString) ?? []
+                var beforeClassFixtures = Converter.convertFixture(fixtures: container.beforeClassMethods, parentUuid: nil)
+                let beforeEachFixtures = Converter.convertFixture(fixtures: container.beforeEachTest, parentUuid: testUuidString)
                 beforeClassFixtures.append(contentsOf: beforeEachFixtures)
 
-                var afterClassFixtures = Converter.convertFixture(fixtures: container.afterClassMethods, parentUuid: nil) ?? []
-                let afterEachFixtures = Converter.convertFixture(fixtures: container.afterEachTest, parentUuid: testUuidString) ?? []
+                var afterClassFixtures = Converter.convertFixture(fixtures: container.afterClassMethods, parentUuid: nil)
+                let afterEachFixtures = Converter.convertFixture(fixtures: container.afterEachTest, parentUuid: testUuidString)
                 afterClassFixtures.append(contentsOf: afterEachFixtures)
 
                 let autoTestPutModel = Converter.autoTestModelToAutoTestPutModel(
@@ -178,21 +178,21 @@ class HttpWriter: Writer {
     func writeTests(_ container: MainContainer) { // For MainContainer
         do {
             Self.logger.warning("HttpWriter.writeTests started...")
-            let beforeAllFixtures = Converter.convertFixture(fixtures: container.beforeMethods, parentUuid: nil) ?? []
-            let afterAllFixtures = Converter.convertFixture(fixtures: container.afterMethods, parentUuid: nil) ?? []
-            let beforeResultAll = Converter.convertResultFixture(fixtures: container.beforeMethods, parentUuid: nil) ?? []
-            let afterResultAll = Converter.convertResultFixture(fixtures: container.afterMethods, parentUuid: nil) ?? []
+            let beforeAllFixtures = Converter.convertFixture(fixtures: container.beforeMethods, parentUuid: nil)
+            let afterAllFixtures = Converter.convertFixture(fixtures: container.afterMethods, parentUuid: nil)
+            let beforeResultAll = Converter.convertResultFixture(fixtures: container.beforeMethods, parentUuid: nil)
+            let afterResultAll = Converter.convertResultFixture(fixtures: container.afterMethods, parentUuid: nil)
 
             for classUuidString in container.children {
-                let classUuid = UUID(uuidString: classUuidString)
+                // let classUuid = UUID(uuidString: classUuidString)
                 let classContainerOpt = storage.getClassContainer(classUuidString)
                 let classContainer = classContainerOpt
 
-                let beforeResultClass = Converter.convertResultFixture(fixtures: classContainer!.beforeClassMethods, parentUuid: nil) ?? []
-                let afterResultClass = Converter.convertResultFixture(fixtures: classContainer!.afterClassMethods, parentUuid: nil) ?? []
+                let beforeResultClass = Converter.convertResultFixture(fixtures: classContainer!.beforeClassMethods, parentUuid: nil)
+                let afterResultClass = Converter.convertResultFixture(fixtures: classContainer!.afterClassMethods, parentUuid: nil)
 
                 for testUuidString in classContainer!.children {
-                    let testUuid = UUID(uuidString: testUuidString)
+                    // let testUuid = UUID(uuidString: testUuidString)
                     let testResultOpt = storage.getTestResult(testUuidString)
                     let testResult = testResultOpt
 
@@ -225,7 +225,7 @@ class HttpWriter: Writer {
                             beforeFinish.append(contentsOf: existingSetup)
                         }
                         
-                        let classAfterFixtures = Converter.convertFixture(fixtures: classContainer!.afterClassMethods, parentUuid: nil) ?? []
+                        let classAfterFixtures = Converter.convertFixture(fixtures: classContainer!.afterClassMethods, parentUuid: nil)
                         var afterFinish = autoTestModel!.teardown ?? [] // Assuming teardown is [FixtureResultModel]?
                         afterFinish.append(contentsOf: classAfterFixtures)
                         afterFinish.append(contentsOf: afterAllFixtures)
@@ -239,12 +239,12 @@ class HttpWriter: Writer {
                         Self.logger.debug("writeTests: Calling client.updateAutoTest with ")
                         try client.updateAutoTest(model: autoTestPutModel!)
 
-                        let beforeResultEach = Converter.convertResultFixture(fixtures: classContainer!.beforeEachTest, parentUuid: testUuidString) ?? []
+                        let beforeResultEach = Converter.convertResultFixture(fixtures: classContainer!.beforeEachTest, parentUuid: testUuidString)
                         var beforeResultFinish = beforeResultAll
                         beforeResultFinish.append(contentsOf: beforeResultClass)
                         beforeResultFinish.append(contentsOf: beforeResultEach)
 
-                        let afterResultEach = Converter.convertResultFixture(fixtures: classContainer!.afterEachTest, parentUuid: testUuidString) ?? []
+                        let afterResultEach = Converter.convertResultFixture(fixtures: classContainer!.afterEachTest, parentUuid: testUuidString)
                         var afterResultFinish: [AttachmentPutModelAutoTestStepResultsModel] = [] // Explicit type
                         afterResultFinish.append(contentsOf: afterResultEach)
                         afterResultFinish.append(contentsOf: afterResultClass)

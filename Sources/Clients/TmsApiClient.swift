@@ -236,7 +236,7 @@ class TmsApiClient: ApiClient {
         Self.logger.debug("AutoTestPutModel setup: \(String(describing: escapedModel.setup))")
         Self.logger.debug("AutoTestPutModel teardown: \(String(describing: escapedModel.teardown))")
         Self.logger.debug("AutoTestPutModel labels: \(String(describing: escapedModel.labels))")
-        Self.logger.debug("AutoTestPutModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
+        // Self.logger.debug("AutoTestPutModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
 
         lock.lock()
         defer { lock.unlock() }
@@ -571,7 +571,7 @@ class TmsApiClient: ApiClient {
 
         // Check file permissions
         do {
-            let attributes = try FileManager.default.attributesOfItem(atPath: path)
+            // let attributes = try FileManager.default.attributesOfItem(atPath: path)
             //Self.logger.debug("File attributes: \(attributes)")
             
             // Check read permissions
