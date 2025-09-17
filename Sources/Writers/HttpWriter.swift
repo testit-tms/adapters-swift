@@ -202,7 +202,8 @@ class HttpWriter: Writer {
                     do {
                         Self.logger.debug("Get autoTestByExternalId with externalId: \(testResult!.externalId) in writeTests")
                         var autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResult!.externalId)
-                    
+                        // update external key with new externalKey
+                        autoTestApiResult?.externalKey = testResult?.externalKey
 
                         if autoTestApiResult != nil {
                             //Self.logger.debug("Auto test exists. Updating auto test: \(autoTestApiResult.externalId)")
