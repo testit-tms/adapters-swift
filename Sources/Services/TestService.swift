@@ -38,12 +38,13 @@ final class TestService {
             labels: [],
             linkItems: [],
             name: testName,
-            externalKey: Utils.genExternalKey(from: testCase)
+            externalKey: Utils.genExternalKey(from: testCase, originalTestName: testName),
+            originalTestName: testName
         )
         
         uuids[testCase.name] = uuid
-        await adapterManager.scheduleTestCase(result: result)
-        await adapterManager.startTestCase(uuid: uuid)
+        adapterManager.scheduleTestCase(result: result)
+        adapterManager.startTestCase(uuid: uuid)
     }
 
    
@@ -101,7 +102,7 @@ final class TestService {
         }
 
         
-        await adapterManager.stopTestCase(uuid: uuid)
+        adapterManager.stopTestCase(uuid: uuid)
     }
 
 }

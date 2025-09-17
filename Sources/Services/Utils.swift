@@ -37,17 +37,21 @@ enum Utils {
     }
     
     /// Generates external key in format "scheme/testClass/testMethod" for XCTestCase
-    static func genExternalKey(from testCase: XCTestCase) -> String {
+    static func genExternalKey(from testCase: XCTestCase, originalTestName: String) -> String {
         // Get scheme/target name from bundle
         let bundle = Bundle(for: type(of: testCase))
-        let schemeName = bundle.bundleIdentifier ?? "UnknownScheme"
-        
+        var schemeName = bundle.bundleIdentifier ?? "UnknownScheme"
+        // if schemeName contains ".", take only the part after the first "."
+        schemeName = schemeName.components(separatedBy: ".").last ?? schemeName
+
         // Get test class name
         let className = String(describing: type(of: testCase))
         
         // Get test method name (testCase.name contains the full method name)
-        let methodName = testCase.name
-        
+        var methodName = originalTestName
+        // if methodName contains "-[\(className) ", take only the part after it and remove the "]"
+        methodName = methodName.components(separatedBy: "-[\(className) ").last?.replacingOccurrences(of: "]", with: "") ?? methodName
+
         // Combine all parts with '/' separator
         return "\(schemeName)/\(className)/\(methodName)"
     }
