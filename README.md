@@ -9,7 +9,7 @@ XCTest support only for now
 |----------|---------------|
 | 5.3      | 0.1.2-tms.5.3 |
 | 5.4      | 0.3.2-tms.5.4 |
-| Cloud    | 0.3.5         |
+| Cloud    | 0.3.8         |
 
 
 ## Examples
