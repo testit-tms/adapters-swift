@@ -372,7 +372,7 @@ class TmsApiClient: ApiClient {
                 let attemptSemaphore = DispatchSemaphore(value: 0)
                 var attemptError: Error?
                 
-                _ = AutoTestsAPI.linkAutoTestToWorkItem(id: id, workItemIdModel: WorkItemIdModel(id: workItemId), apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+                _ = AutoTestsAPI.linkAutoTestToWorkItem(id: id, workItemIdApiModel: WorkItemIdApiModel(id: workItemId), apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
                     if let error = error {
                         attemptError = error
                     } else {
