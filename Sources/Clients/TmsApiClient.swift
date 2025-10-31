@@ -502,6 +502,7 @@ class TmsApiClient: ApiClient {
     }
 
     func sendTestResults(testRunUuid: String, models: [AutoTestResultsForTestRunModel]) throws -> [String] {
+        print("[TestItAdapter] TmsApiClient.sendTestResults called with testRunUuid: \(testRunUuid)")
         Self.logger.debug("TmsApiClient: sendTestResults... with testRunUuid: \(testRunUuid) and models: \(models)")
 
         // Escape HTML in models before sending
@@ -512,10 +513,12 @@ class TmsApiClient: ApiClient {
 
         // No lock needed according to Kotlin version? Consider if needed for safety.
         guard let runUUID = UUID(uuidString: testRunUuid) else {
-             Self.logger.error("Cannot send results: Invalid Test Run UUID format \"\(testRunUuid)\"")
+            print("[TestItAdapter] ERROR: Invalid Test Run UUID format: \(testRunUuid)")
+            Self.logger.error("Cannot send results: Invalid Test Run UUID format \"\(testRunUuid)\"")
             throw TmsApiClientError.invalidUUIDFormat("Invalid Test Run UUID format")
         }
         
+        print("[TestItAdapter] Calling TestRunsAPI.setAutoTestResultsForTestRun...")
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         var resultUUIDsFromApi: [UUID]?
@@ -556,13 +559,16 @@ class TmsApiClient: ApiClient {
     }
 
     func addAttachment(path: String) throws -> String {
+        print("[TestItAdapter] TmsApiClient.addAttachment called with path: \(path)")
         Self.logger.debug("TmsApiClient: addAttachment... with path: \(path)")
 
         // No lock needed according to Kotlin version? Consider if needed for safety.
         let fileURL = URL(fileURLWithPath: path)
         guard FileManager.default.fileExists(atPath: path) else {
-             Self.logger.error("Cannot add attachment: File not found at path \"\(path)\"")
-             throw TmsApiClientError.fileNotFound(path)
+            print("[TestItAdapter] ERROR: File not found at path: \(path)")
+            print("[TestItAdapter] Current working directory: \(FileManager.default.currentDirectoryPath)")
+            Self.logger.error("Cannot add attachment: File not found at path \"\(path)\"")
+            throw TmsApiClientError.fileNotFound(path)
         }
 
         // Log the current working directory
@@ -576,43 +582,54 @@ class TmsApiClient: ApiClient {
             
             // Check read permissions
             if !FileManager.default.isReadableFile(atPath: path) {
+                print("[TestItAdapter] ERROR: No read permission for file at path: \(path)")
                 Self.logger.error("Cannot add attachment: No read permission for file at path \"\(path)\"")
                 throw TmsApiClientError.fileNotFound(path)
             }
         } catch {
+            print("[TestItAdapter] ERROR checking file permissions: \(error.localizedDescription)")
             Self.logger.error("Error checking file permissions: \(error.localizedDescription)")
             throw TmsApiClientError.fileNotFound(path)
         }
         
+        print("[TestItAdapter] File found and readable, uploading...")
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         var attachmentModelResponse: AttachmentModel?
         
         _ = AttachmentsAPI.apiV2AttachmentsPost(file: fileURL, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
+                print("[TestItAdapter] ERROR uploading attachment: \(error.localizedDescription)")
                 Self.logger.error("Error uploading attachment from path \"\(path)\": \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
+                print("[TestItAdapter] Attachment uploaded successfully, received model")
                 attachmentModelResponse = data
             } else {
+                print("[TestItAdapter] ERROR: API returned no data and no error")
                 Self.logger.error("apiV2AttachmentsPost for path \"\(path)\" returned no data and no error.")
                 operationError = TmsApiClientError.missingApiResponseData("apiV2AttachmentsPost for path \"\(path)\" returned no data and no error")
             }
             semaphore.signal()
         }
         
+        print("[TestItAdapter] Waiting for attachment upload to complete...")
         semaphore.wait()
+        print("[TestItAdapter] Attachment upload completed")
         
         if let error = operationError {
+            print("[TestItAdapter] ERROR: Failed to upload attachment: \(error.localizedDescription)")
             Self.logger.error("Failed to upload attachment from path \"\(path)\" (propagating error): \(error.localizedDescription)")
             throw error
         }
         
         guard let model = attachmentModelResponse else {
+            print("[TestItAdapter] ERROR: Attachment response was nil")
             Self.logger.error("apiV2AttachmentsPost for path \"\(path)\" response was nil after operation, and no explicit error was caught.")
             throw TmsApiClientError.missingApiResponseData("apiV2AttachmentsPost response was nil for path \"\(path)\" after operation")
         }
         
+        print("[TestItAdapter] ✓✓✓ Attachment uploaded successfully! ID: \(model.id.uuidString)")
         Self.logger.debug("Uploaded attachment from path \"\(path)\". Received ID: \(model.id.uuidString)")
         return model.id.uuidString
     }

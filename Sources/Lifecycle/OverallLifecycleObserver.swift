@@ -27,9 +27,10 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
 
     // Private initializer to ensure the instance is created only through OverallLifecycleObserver.shared
     private override init() {
-        
         super.init()
         XCTestObservationCenter.shared.addTestObserver(self)
+        // Print to stdout for visibility in swift test runs
+        print("[TestItAdapter] OverallLifecycleObserver initialized and registered in XCTestObservationCenter")
         self.logger.info("OverallLifecycleObserver.shared initialized and registered. Setup will occur based on XCTest lifecycle events.")
     }
 
@@ -48,6 +49,7 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
     }
 
     func testSuiteWillStart(_ testSuite: XCTestSuite) {
+        print("[TestItAdapter] testSuiteWillStart: \(testSuite.name)")
         self.logger.info("Test suite will start: \(testSuite.name)")
         // If dependencies are not yet configured (for example, testBundleWillStart did not work)
         if !appPropertiesInitialized || !writerInitialized {
@@ -80,16 +82,23 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
 
     // This method is called AFTER ALL tests in the bundle have finished
     func testBundleDidFinish(_ testBundle: Bundle) {
+        print("[TestItAdapter] ============================================")
+        print("[TestItAdapter] >>> All tests in the bundle did finish! <<<")
+        print("[TestItAdapter] ============================================")
         self.logger.info("-------------------------------------")
         self.logger.info(">>> All tests in the bundle did finish! <<<: \(testBundle.bundleURL.lastPathComponent)")
         self.logger.info("-------------------------------------")
         let success = waitForAsyncTask {
             guard let strongWriter = self.writer else {
+                print("[TestItAdapter] ERROR: Writer is nil in testBundleDidFinish")
                 self.logger.error("ERROR from testBundleDidFinish Task - Writer is nil.")
                 return
             }
+            print("[TestItAdapter] Calling onAfterAll...")
             await strongWriter.onAfterAll()
+            print("[TestItAdapter] onAfterAll completed")
         }
+        print("[TestItAdapter] testBundleDidFinish - onAfterAll completion success: \(success)")
         self.logger.info("testBundleDidFinish - onAfterAll completion success: \(success)")
     }
     
@@ -100,33 +109,218 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
 
     // looks like the same as TestItXCTestCase.invokeTest()
     func testCaseWillStart(_ testCase: XCTestCase) {
+        print("[TestItAdapter] testCaseWillStart: \(testCase.name)")
         self.logger.info("Test case will start: \(testCase.name)")
+
+        // CRITICAL: If testSuiteWillStart wasn't called (common in swift test), initialize dependencies here
+        if !appPropertiesInitialized || !writerInitialized {
+            print("[TestItAdapter] Dependencies not initialized, attempting setup in testCaseWillStart")
+            self.logger.info("Dependencies not yet initialized, attempting setup via testCaseWillStart (fallback for swift test).")
+            
+            // First try test case bundle - this is most reliable for SPM
+            let testCaseBundle = Bundle(for: type(of: testCase))
+            print("[TestItAdapter] Test case bundle: \(testCaseBundle.bundleURL.lastPathComponent)")
+            
+            var dependenciesSetup = false
+            
+            // In SPM, resources are often in a separate .bundle file (not .xctest)
+            // Search all bundles for one containing testit.properties
+            // Also try to explicitly load .bundle files from common locations
+            print("[TestItAdapter] Searching for bundle with testit.properties...")
+            print("[TestItAdapter] Available bundles count: \(Bundle.allBundles.count)")
+            
+            // First, try all currently loaded bundles
+            for bundle in Bundle.allBundles {
+                let bundlePath = bundle.bundlePath
+                // Check if this is a test-related bundle
+                if bundlePath.contains("Tests") || bundlePath.hasSuffix(".bundle") || bundlePath.hasSuffix(".xctest") {
+                    print("[TestItAdapter] Checking bundle: \(bundle.bundleURL.lastPathComponent)")
+                    if let resourcePath = bundle.resourcePath {
+                        // Try direct path first
+                        let propertiesPath = (resourcePath as NSString).appendingPathComponent("testit.properties")
+                        if FileManager.default.fileExists(atPath: propertiesPath) {
+                            print("[TestItAdapter] ✓ Found bundle with testit.properties: \(bundle.bundleURL.lastPathComponent) (path: \(propertiesPath))")
+                            setupDependencies(using: bundle, isPreferredBundle: false)
+                            dependenciesSetup = true
+                            break
+                        }
+                        // Try recursive search in subdirectories
+                        let fileManager = FileManager.default
+                        if let enumerator = fileManager.enumerator(atPath: resourcePath) {
+                            while let element = enumerator.nextObject() as? String {
+                                if element.hasSuffix("testit.properties") {
+                                    let foundPath = (resourcePath as NSString).appendingPathComponent(element)
+                                    print("[TestItAdapter] ✓ Found bundle with testit.properties (recursive): \(bundle.bundleURL.lastPathComponent) at \(foundPath)")
+                                    setupDependencies(using: bundle, isPreferredBundle: false)
+                                    dependenciesSetup = true
+                                    break
+                                }
+                            }
+                            if dependenciesSetup { break }
+                        }
+                    }
+                }
+            }
+            
+            // Try to explicitly load .bundle file if it exists but wasn't loaded
+            if !dependenciesSetup {
+                let xctestPath = testCaseBundle.bundlePath
+                let basePath = (xctestPath as NSString).deletingLastPathComponent
+                
+                // Construct possible bundle paths
+                let xctestName = (xctestPath as NSString).lastPathComponent
+                let bundleName = xctestName.replacingOccurrences(of: ".xctest", with: ".bundle")
+                let bundleNameAlt = xctestName.replacingOccurrences(of: "PackageTests.xctest", with: "_examples-spmTests.bundle")
+                
+                let possibleBundlePaths = [
+                    (basePath as NSString).appendingPathComponent(bundleName),
+                    (basePath as NSString).appendingPathComponent(bundleNameAlt),
+                    ((basePath as NSString).deletingLastPathComponent as NSString).appendingPathComponent(bundleName),
+                    ((basePath as NSString).deletingLastPathComponent as NSString).appendingPathComponent(bundleNameAlt),
+                ]
+                
+                print("[TestItAdapter] Trying to load bundle from paths:")
+                for bundlePathString in possibleBundlePaths {
+                    print("[TestItAdapter]   - \(bundlePathString)")
+                    if FileManager.default.fileExists(atPath: bundlePathString) {
+                        print("[TestItAdapter]   ✓ Bundle exists: \(bundlePathString)")
+                        if let bundle = Bundle(path: bundlePathString) {
+                            print("[TestItAdapter]   ✓ Bundle loaded: \(bundle.bundleURL.lastPathComponent)")
+                            if let resourcePath = bundle.resourcePath {
+                                print("[TestItAdapter]   Resource path: \(resourcePath)")
+                                let propertiesPath = (resourcePath as NSString).appendingPathComponent("testit.properties")
+                                if FileManager.default.fileExists(atPath: propertiesPath) {
+                                    print("[TestItAdapter] ✓✓✓ Found testit.properties in explicitly loaded bundle: \(propertiesPath)")
+                                    setupDependencies(using: bundle, isPreferredBundle: false)
+                                    dependenciesSetup = true
+                                    break
+                                }
+                                // Try recursive search
+                                let fileManager = FileManager.default
+                                if let enumerator = fileManager.enumerator(atPath: resourcePath) {
+                                    while let element = enumerator.nextObject() as? String {
+                                        if element.hasSuffix("testit.properties") {
+                                            let foundPath = (resourcePath as NSString).appendingPathComponent(element)
+                                            print("[TestItAdapter] ✓✓✓ Found testit.properties (recursive) in explicitly loaded bundle: \(foundPath)")
+                                            setupDependencies(using: bundle, isPreferredBundle: false)
+                                            dependenciesSetup = true
+                                            break
+                                        }
+                                    }
+                                    if dependenciesSetup { break }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Try finding resource file in test case bundle's resourcePath
+            if !dependenciesSetup, let bundlePath = testCaseBundle.resourcePath {
+                var propertiesPath = (bundlePath as NSString).appendingPathComponent("testit.properties")
+                if FileManager.default.fileExists(atPath: propertiesPath) {
+                    print("[TestItAdapter] Found testit.properties at: \(propertiesPath)")
+                    do {
+                        let propertiesContent = try String(contentsOfFile: propertiesPath, encoding: .utf8)
+                        AppProperties.initialize(propertiesString: propertiesContent)
+                        print("[TestItAdapter] AppProperties initialized from: \(propertiesPath)")
+                        appPropertiesInitialized = true
+                        
+                        if !writerInitialized {
+                            writer = TestItWriter()
+                            writerInitialized = true
+                            print("[TestItAdapter] TestItWriter initialized successfully")
+                        }
+                        dependenciesSetup = true
+                    } catch {
+                        print("[TestItAdapter] ERROR reading properties file: \(error)")
+                    }
+                } else {
+                    // Try recursive search
+                    let fileManager = FileManager.default
+                    if let enumerator = fileManager.enumerator(atPath: bundlePath) {
+                        while let element = enumerator.nextObject() as? String {
+                            if element.hasSuffix("testit.properties") {
+                                propertiesPath = (bundlePath as NSString).appendingPathComponent(element)
+                                print("[TestItAdapter] Found testit.properties recursively at: \(propertiesPath)")
+                                do {
+                                    let propertiesContent = try String(contentsOfFile: propertiesPath, encoding: .utf8)
+                                    AppProperties.initialize(propertiesString: propertiesContent)
+                                    print("[TestItAdapter] AppProperties initialized from: \(propertiesPath)")
+                                    appPropertiesInitialized = true
+                                    
+                                    if !writerInitialized {
+                                        writer = TestItWriter()
+                                        writerInitialized = true
+                                        print("[TestItAdapter] TestItWriter initialized successfully")
+                                    }
+                                    dependenciesSetup = true
+                                    break
+                                } catch {
+                                    print("[TestItAdapter] ERROR reading properties file: \(error)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Fallback to findXCTestBundle
+            if !dependenciesSetup {
+                if let xctestBundle = findXCTestBundle() {
+                    setupDependencies(using: xctestBundle, isPreferredBundle: false)
+                } else {
+                    setupDependencies(using: testCaseBundle, isPreferredBundle: false)
+                }
+            }
+        }
+
+        // CRITICAL: Call onBeforeAll if testSuiteWillStart wasn't called (fallback for swift test)
+        // MUST be called BEFORE onTestWillStart to ensure test run is created
+        if !beforeAllCalled {
+            print("[TestItAdapter] testSuiteWillStart not called, calling onBeforeAll in testCaseWillStart")
+            let beforeAllSuccess = waitForAsyncTask {
+                guard let strongWriter = self.writer else {
+                    self.logger.error("ERROR from testCaseWillStart onBeforeAll Task - Writer is nil.")
+                    return
+                }
+                await strongWriter.onBeforeAll()
+                self.beforeAllCalled = true
+            }
+            print("[TestItAdapter] onBeforeAll completed: \(beforeAllSuccess)")
+        }
 
         // Clear before new test
         self.currentTestBodyIssues = []
         self.currentFixtureIssues = []
         self.currentTestCaseName = testCase.name
 
+        // CRITICAL: Call onTestWillStart to initialize test UUID BEFORE test starts
+        print("[TestItAdapter] Calling onTestWillStart for: \(testCase.name)")
         let success = waitForAsyncTask {
             self.logger.info("Task for testCaseWillStart: Calling writer.onTestWillStart for test \(testCase.name)...")
-            // Delay removed, because it was not part of the rollback request to waitForAsyncTask
             guard let strongWriter = self.writer else {
+                print("[TestItAdapter] ERROR: Writer is nil in testCaseWillStart")
                 self.logger.error("ERROR from testCaseWillStart Task - Writer is nil.")
                 return
             }
             await strongWriter.onTestWillStart(for: testCase)
+            print("[TestItAdapter] onTestWillStart completed for: \(testCase.name)")
             self.logger.info("Task for testCaseWillStart: writer.onTestWillStart completed for test \(testCase.name).")
         }
+        print("[TestItAdapter] testCaseWillStart - onTestWillStart completion success: \(success)")
         self.logger.info("testCaseWillStart - onTestWillStart completion success: \(success)")
     }
 
     // automatically in both success and failure cases
     func testCaseDidFinish(_ testCase: XCTestCase) {
+        print("[TestItAdapter] testCaseDidFinish: \(testCase.name)")
         self.logger.info("Test case did finish: \(testCase.name)")
         let finishTime = Date() // Fix time of test finish
 
         waitForAsyncTask {
             if let strongWriter = self.writer {
+                print("[TestItAdapter] Writer available, processing test finish...")
                 let fixtureService = strongWriter.fixtureService
                 // Complete before-fixture (setUp)
                 // If recordFailureInCurrentFixture already marked it as failed and finished, this call will not overwrite the status.
@@ -140,8 +334,11 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
                 fixtureService.completeCurrentAfterFixture(for: testCase, status: .passed, stopTime: finishTime, issue: nil)
 
                 // Pass collected issues and testCase to TestItWriter
+                print("[TestItAdapter] Calling onTestDidFinish for: \(testCase.name)")
                 await strongWriter.onTestDidFinish(for: testCase, fixtureIssues: self.currentFixtureIssues, testBodyIssues: self.currentTestBodyIssues)
+                print("[TestItAdapter] onTestDidFinish completed for: \(testCase.name)")
             } else {
+                print("[TestItAdapter] ERROR: Writer is nil in testCaseDidFinish")
                 self.logger.error("ERROR from testCaseDidFinish - Writer or FixtureService is nil, cannot complete fixtures or call onTestDidFinish.")
             }
             // Clear issues after processing, prepare for next test
@@ -252,42 +449,115 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
         if !appPropertiesInitialized {
             let propertiesFileName = "testit"
             let propertiesExtension = "properties"
+            print("[TestItAdapter] Attempting to load AppProperties from bundle: \(bundle.bundleURL.lastPathComponent)")
             self.logger.info("Attempting to load AppProperties from bundle: \(bundle.bundleURL.lastPathComponent)")
-            guard let propertiesURL = bundle.url(forResource: propertiesFileName, withExtension: propertiesExtension) else {
+            
+            var propertiesURL: URL?
+            
+            // Try standard Bundle API first
+            propertiesURL = bundle.url(forResource: propertiesFileName, withExtension: propertiesExtension)
+            
+            // Fallback: try resourcePath for SPM packages
+            if propertiesURL == nil, let resourcePath = bundle.resourcePath {
+                // Try directly in resourcePath
+                var propertiesPath = (resourcePath as NSString).appendingPathComponent("\(propertiesFileName).\(propertiesExtension)")
+                if FileManager.default.fileExists(atPath: propertiesPath) {
+                    propertiesURL = URL(fileURLWithPath: propertiesPath)
+                    print("[TestItAdapter] Found properties file via resourcePath: \(propertiesPath)")
+                } else {
+                    // Try searching recursively in resourcePath
+                    let fileManager = FileManager.default
+                    if let enumerator = fileManager.enumerator(atPath: resourcePath) {
+                        while let element = enumerator.nextObject() as? String {
+                            if element.hasSuffix("\(propertiesFileName).\(propertiesExtension)") {
+                                propertiesPath = (resourcePath as NSString).appendingPathComponent(element)
+                                propertiesURL = URL(fileURLWithPath: propertiesPath)
+                                print("[TestItAdapter] Found properties file recursively: \(propertiesPath)")
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+            
+            guard let finalPropertiesURL = propertiesURL else {
+                print("[TestItAdapter] WARNING: File \(propertiesFileName).\(propertiesExtension) not found in bundle \(bundle.bundleIdentifier ?? bundle.bundleURL.lastPathComponent)")
                 self.logger.warning("Warning: File \(propertiesFileName).\(propertiesExtension) not found in bundle \(bundle.bundleIdentifier ?? bundle.bundleURL.lastPathComponent). AppProperties will not be initialized from this bundle.")
                 return
             }
+            
             do {
-                let propertiesContent = try String(contentsOf: propertiesURL, encoding: .utf8)
+                let propertiesContent = try String(contentsOf: finalPropertiesURL, encoding: .utf8)
                 AppProperties.initialize(propertiesString: propertiesContent)
-                self.logger.info("AppProperties initialized. Content loaded from: \(propertiesURL.path)")
+                print("[TestItAdapter] AppProperties initialized successfully from: \(finalPropertiesURL.path)")
+                self.logger.info("AppProperties initialized. Content loaded from: \(finalPropertiesURL.path)")
                 appPropertiesInitialized = true
             } catch {
-                self.logger.warning("Error reading properties file \(propertiesURL.path): \(error). AppProperties will not be initialized.")
+                print("[TestItAdapter] ERROR reading properties file \(finalPropertiesURL.path): \(error)")
+                self.logger.warning("Error reading properties file \(finalPropertiesURL.path): \(error). AppProperties will not be initialized.")
                 return
             }
         }
 
         if !writerInitialized {
             guard appPropertiesInitialized else {
-                 self.logger.error("ERROR - AppProperties not initialized, cannot create TestItWriter.")
-                 return
+                print("[TestItAdapter] ERROR - AppProperties not initialized, cannot create TestItWriter.")
+                self.logger.error("ERROR - AppProperties not initialized, cannot create TestItWriter.")
+                return
             }
             writer = TestItWriter()
             writerInitialized = true
+            print("[TestItAdapter] TestItWriter initialized successfully")
             self.logger.info("TestItWriter initialized.")
         }
     }
 
     
     private func findXCTestBundle() -> Bundle? {
+        // First, try to find bundle that actually contains testit.properties
+        // In SPM, resources are often in a .bundle file, not .xctest
+        // Prioritize bundles that contain the properties file
         for bundle in Bundle.allBundles {
-            // Search for bundles with .xctest extension
+            let bundlePath = bundle.bundlePath
+            // Check if this bundle might contain test resources
+            if bundlePath.contains("Tests") || bundlePath.contains("test") || bundlePath.contains("PackageTests") || bundlePath.hasSuffix(".bundle") || bundlePath.hasSuffix(".xctest") {
+                // Check via resourcePath (most reliable for SPM)
+                if let resourcePath = bundle.resourcePath {
+                    // Try direct path first
+                    let propertiesPath = (resourcePath as NSString).appendingPathComponent("testit.properties")
+                    if FileManager.default.fileExists(atPath: propertiesPath) {
+                        print("[TestItAdapter] Found bundle with testit.properties: \(bundle.bundleURL.lastPathComponent)")
+                        return bundle
+                    }
+                    // Try recursive search in subdirectories
+                    let fileManager = FileManager.default
+                    if let enumerator = fileManager.enumerator(atPath: resourcePath) {
+                        while let element = enumerator.nextObject() as? String {
+                            if element.hasSuffix("testit.properties") {
+                                print("[TestItAdapter] Found bundle with testit.properties (recursive): \(bundle.bundleURL.lastPathComponent)")
+                                return bundle
+                            }
+                        }
+                    }
+                }
+                // Also check via standard Bundle API
+                if bundle.url(forResource: "testit", withExtension: "properties") != nil {
+                    print("[TestItAdapter] Found bundle with testit.properties (via API): \(bundle.bundleURL.lastPathComponent)")
+                    return bundle
+                }
+            }
+        }
+        
+        // Fallback: return .xctest bundle if no bundle with resources found
+        // This allows setupDependencies to try alternative search methods
+        for bundle in Bundle.allBundles {
             if bundle.bundlePath.hasSuffix(".xctest") {
-                self.logger.info("Found .xctest bundle via findXCTestBundle: \(bundle.bundleURL.lastPathComponent)")
+                print("[TestItAdapter] No bundle with resources found, using .xctest bundle: \(bundle.bundleURL.lastPathComponent)")
                 return bundle
             }
         }
+        
+        print("[TestItAdapter] No suitable bundle found")
         self.logger.info("No .xctest bundle found via findXCTestBundle.")
         return nil
     }

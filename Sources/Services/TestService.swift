@@ -50,14 +50,17 @@ final class TestService {
    
 
     func stopTestWithResult(testCase: XCTestCase, status: ItemStatus, message: String?, trace: String?) async {
+        print("[TestItAdapter] TestService.stopTestWithResult called for: \(testCase.name) with status: \(status)")
         Self.logger.debug("TestService.stopTestWithResult called for test: \(testCase.name) with status: \(String(describing: status))")
         
         executableTestService.setAfterStatus(testName: testCase.name)
         
         guard let uuid = executableTestService.getUuid(testName: testCase.name) else {
+            print("[TestItAdapter] ERROR: Could not get UUID for test: \(testCase.name)")
             Self.logger.error("Could not get UUID for test: \(testCase.name) in stopTestWithResult.")
             return
         }
+        print("[TestItAdapter] Got UUID for test: \(uuid)")
 
         var finalItemStatus: ItemStatus = .failed
         var errorForThrowable: Error? = nil
@@ -102,7 +105,9 @@ final class TestService {
         }
 
         
+        print("[TestItAdapter] Calling adapterManager.stopTestCase for UUID: \(uuid)")
         adapterManager.stopTestCase(uuid: uuid)
+        print("[TestItAdapter] adapterManager.stopTestCase completed")
     }
 
 }
