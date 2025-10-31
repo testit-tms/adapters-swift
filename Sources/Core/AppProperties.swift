@@ -94,7 +94,8 @@ enum AppProperties {
         // 2. Load from Environment Variables (using env mapping)
         let envProperties = ProcessInfo.processInfo.environment
         if let envVarMap = envVarsNames["env"] {
-             properties.merge(loadPropertiesFromSource(source: envProperties, mapping: envVarMap)) { (_, new) in new }
+            let envOverrides = loadPropertiesFromSource(source: envProperties, mapping: envVarMap)
+            properties.merge(envOverrides) { (_, new) in new }
         }
        
         // 3. Load from Command Line Arguments (placeholder using cli mapping)
@@ -139,10 +140,9 @@ enum AppProperties {
                 let key = String(trimmedLine[..<separatorIndex]).trimmingCharacters(in: .whitespaces)
                 let value = String(trimmedLine[trimmedLine.index(after: separatorIndex)...]).trimmingCharacters(in: .whitespaces)
                 if !key.isEmpty && !value.isEmpty {
-                     // Only set if value is not empty, merging strategy prefers later sources
-                    if properties[key] == nil {
-                         properties[key] = value
-                    }
+                     // Set property if both key and value are not empty
+                     // Later occurrences override earlier ones (last value wins)
+                    properties[key] = value
                 }
             }
         }
@@ -155,7 +155,13 @@ enum AppProperties {
         var result: [String: String] = [:]
         
         for (propKey, sourceKey) in mapping {
-            guard let value = source[sourceKey], !value.isEmpty, value.lowercased() != "null" else {
+            guard let value = source[sourceKey] else {
+                continue // Skip if environment variable is not set
+            }
+            
+            // Skip empty values and "null" strings - don't override file values with empty/null env vars
+            guard !value.isEmpty && value.lowercased() != "null" else {
+                logger.debug("Skipping empty or null environment variable '\(sourceKey)' to preserve file value")
                 continue
             }
 
