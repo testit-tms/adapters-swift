@@ -10,12 +10,19 @@ open class TestItXCTestCase: XCTestCase {
     private static var originalSetUpWithErrorIMP: IMP? = nil
     private static var originalTearDownWithErrorIMP: IMP? = nil
 
-    private var initializer = TestAdapterInitializer()
-
     // MARK: - Initialization
-   
+    
+    // CRITICAL: Initialize observer before swizzling to ensure it's registered before any tests run
+    // This static block executes when the class is first loaded, which happens before XCTest starts
+    private static let _ensureObserverReady: Void = {
+        print("[TestItAdapter] TestItXCTestCase class loading - initializing observer")
+        _ = OverallLifecycleObserver.shared
+        print("[TestItAdapter] Observer ready")
+    }()
 
     private static let swizzleSetupAndTeardown: Void = {
+        // Ensure observer is ready before swizzling
+        _ = TestItXCTestCase._ensureObserverReady
         // Swizzle setUp
         let originalSetUp = class_getInstanceMethod(TestItXCTestCase.self, #selector(setUp)) // Updated class name
         let swizzledSetUp = class_getInstanceMethod(TestItXCTestCase.self, #selector(swizzled_setUp)) // Updated class name
@@ -48,8 +55,8 @@ open class TestItXCTestCase: XCTestCase {
     override open class func setUp() {
         super.setUp()
         
-        _ = TestItXCTestCase.swizzleSetupAndTeardown // Updated class name
-        _ = TestItXCTestCase.swizzleSetupAndTeardownWithError // Updated class name
+        _ = TestItXCTestCase.swizzleSetupAndTeardown
+        _ = TestItXCTestCase.swizzleSetupAndTeardownWithError
     }
 
     @objc func swizzled_setUp() {

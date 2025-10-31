@@ -76,14 +76,18 @@ class AdapterManager {
             return
         }
 
+        print("[TestItAdapter] createTestRunIfNeeded called")
         Self.logger.debug("Attempting to establish Test Run ID...")
 
         let (initialTestRunId, isConfigTestRunIdMissing) = lock.withLock {
             let testRunId = self.clientConfiguration.testRunId
             return (testRunId, testRunId.isEmpty || testRunId.lowercased() == "null")
         }
+        
+        print("[TestItAdapter] Initial testRunId: '\(initialTestRunId)', missing: \(isConfigTestRunIdMissing), mode: \(self.clientConfiguration.mode)")
 
         if !isConfigTestRunIdMissing && self.clientConfiguration.mode != "2" {
+            print("[TestItAdapter] Test Run ID already provided: \(initialTestRunId)")
             Self.logger.info("Test Run ID already provided in configuration: \(initialTestRunId). Using this ID.")
             // Ensure that writer knows about this ID, if it was set only in configuration
             // and not passed through the logic below (for example, when restarting with an already existing ID)
@@ -106,18 +110,23 @@ class AdapterManager {
         }
 
         // need new Test Run
+        print("[TestItAdapter] Environment variable \(envVarName) is not set. Creating new Test Run via API...")
         Self.logger.debug("Environment variable \(envVarName) is not set or is empty. Proceeding to create a new Test Run via API.")
         
         do {
+            print("[TestItAdapter] Calling client.createTestRun()...")
             Self.logger.debug("Calling client.createTestRun() asynchronously...")
             let response = try await self.client.createTestRun() // Async call
             let newTestRunId = response.id.uuidString
+            print("[TestItAdapter] ✓✓✓ Test Run created successfully: \(newTestRunId)")
             Self.logger.debug("client.createTestRun() completed. New Test Run ID: \(newTestRunId)")
             lock.withLock {
                 self.clientConfiguration.testRunId = newTestRunId
                 self.writer?.setTestRun(testRunId: newTestRunId)
             }
+            print("[TestItAdapter] Test Run ID set in configuration and writer")
         } catch {
+            print("[TestItAdapter] ERROR creating test run: \(error.localizedDescription)")
             Self.logger.error("Cannot start the launch (error during createTestRun or update): \(error.localizedDescription)")
         }
     }
@@ -300,31 +309,46 @@ class AdapterManager {
     }
 
     func stopTestCase(uuid: String) {
-        guard adapterConfig.shouldEnableTmsIntegration else { return }
+        print("[TestItAdapter] stopTestCase called for UUID: \(uuid)")
+        guard adapterConfig.shouldEnableTmsIntegration else {
+            print("[TestItAdapter] TMS integration disabled, skipping stopTestCase")
+            return
+        }
 
         guard var testResult = storage.getTestResult(uuid) else {
+            print("[TestItAdapter] ERROR: Could not find test result for UUID: \(uuid)")
             Self.logger.error("Could not stop test case: test case with uuid \(uuid) not found")
             return
         }
 
+        print("[TestItAdapter] Found test result: \(testResult.externalId), status: \(testResult.itemStatus?.rawValue ?? "nil")")
 
         testResult.setItemStage(stage: .finished)
         testResult.stop = Int64(Date().timeIntervalSince1970 * 1000)
         
 
         if testResult.attachments.count > 0 {
+            print("[TestItAdapter] Found \(testResult.attachments.count) attachments in test result: \(testResult.attachments)")
             Self.logger.debug("attachments: \(testResult.attachments)")
-            addAttachments(paths: testResult.attachments, uuid: uuid)            
-            testResult.attachments = storage.getAttachmentsList(uuid)!
+            addAttachments(paths: testResult.attachments, uuid: uuid)
+            // Get updated attachments list after upload
+            let updatedAttachments = storage.getAttachmentsList(uuid) ?? []
+            print("[TestItAdapter] Updated attachments list from storage: \(updatedAttachments)")
+            testResult.attachments = updatedAttachments
+        } else {
+            print("[TestItAdapter] No attachments found in test result")
         }
 
+        print("[TestItAdapter] Final test result attachments before sending: \(testResult.attachments)")
         storage.put(uuid, testResult) // Update storage with final state
 
         threadContext.clear() // Clear context after stopping
 
+        print("[TestItAdapter] Calling writer.writeTest for: \(testResult.externalId)")
         Self.logger.debug("Stop test case \(uuid)")
 
         writer?.writeTest(testResult)
+        print("[TestItAdapter] writer.writeTest completed")
     }
 
     // MARK: - Fixture Lifecycle
@@ -455,30 +479,97 @@ class AdapterManager {
     func addAttachments(paths attachmentPaths: [String], uuid: String) {
         guard adapterConfig.shouldEnableTmsIntegration else { return }
         guard let writer = self.writer else {
+            print("[TestItAdapter] ERROR: Cannot add attachments: Writer is not initialized.")
             Self.logger.error("Cannot add attachments: Writer is not initialized.")
             return
         }
 
+        print("[TestItAdapter] addAttachments called with \(attachmentPaths.count) paths for UUID: \(uuid)")
         var attachmentUuids: [String] = []
         for path in attachmentPaths {
-            let attachmentId = writer.writeAttachment(path)
+            print("[TestItAdapter] Processing attachment path: \(path)")
+            // Resolve relative paths relative to test bundle resource path
+            let resolvedPath = resolveAttachmentPath(path)
+            print("[TestItAdapter] Resolved attachment path: \(resolvedPath)")
+            
+            let attachmentId = writer.writeAttachment(resolvedPath)
             if (attachmentId?.isEmpty ?? true) { // Check if ID is nil or empty
-                 Self.logger.warning("Failed to write attachment for path: \(path). Skipping.")
+                print("[TestItAdapter] WARNING: Failed to write attachment for path: \(resolvedPath). Skipping.")
+                Self.logger.warning("Failed to write attachment for path: \(resolvedPath). Skipping.")
                 continue // Continue with next attachment
             }
+            print("[TestItAdapter] ✓ Attachment uploaded successfully, ID: \(attachmentId!)")
             attachmentUuids.append(attachmentId!) // Force unwrap because we checked for nil/empty
         }
         
         guard !attachmentUuids.isEmpty else {
+            print("[TestItAdapter] WARNING: No attachments were successfully written.")
             Self.logger.info("No attachments were successfully written.")
             return
         }
 
-        
-
+        print("[TestItAdapter] Adding \(attachmentUuids.count) attachment UUIDs to test result")
         // Use the dedicated update method from ResultStorage stub
         storage.updateAttachmentsList(uuid, adding: attachmentUuids)
+        print("[TestItAdapter] ✓ Added attachments \(attachmentUuids) to item \(uuid)")
         Self.logger.debug("Added attachments \(attachmentUuids) to item \(uuid)")
+    }
+    
+    private func resolveAttachmentPath(_ path: String) -> String {
+        // If path is already absolute, return as is
+        if (path as NSString).isAbsolutePath {
+            return path
+        }
+        
+        // Try to resolve relative paths
+        // First, try relative to current working directory
+        let currentDir = FileManager.default.currentDirectoryPath
+        let pathFromCurrentDir = (currentDir as NSString).appendingPathComponent(path)
+        if FileManager.default.fileExists(atPath: pathFromCurrentDir) {
+            return pathFromCurrentDir
+        }
+        
+        // Try relative to Resources folder in test bundle
+        // Find test bundle
+        for bundle in Bundle.allBundles {
+            let bundlePath = bundle.bundlePath
+            if bundlePath.contains("Tests") || bundlePath.hasSuffix(".bundle") || bundlePath.hasSuffix(".xctest") {
+                if let resourcePath = bundle.resourcePath {
+                    // Try direct path
+                    let resourceFilePath = (resourcePath as NSString).appendingPathComponent(path)
+                    if FileManager.default.fileExists(atPath: resourceFilePath) {
+                        return resourceFilePath
+                    }
+                    // Try removing leading "./" or "Resources/" from path
+                    var cleanedPath = path
+                    if cleanedPath.hasPrefix("./") {
+                        cleanedPath = String(cleanedPath.dropFirst(2))
+                    }
+                    if cleanedPath.hasPrefix("Resources/") {
+                        cleanedPath = String(cleanedPath.dropFirst(10))
+                    }
+                    let cleanedResourcePath = (resourcePath as NSString).appendingPathComponent(cleanedPath)
+                    if FileManager.default.fileExists(atPath: cleanedResourcePath) {
+                        return cleanedResourcePath
+                    }
+                    // Try recursive search in resourcePath
+                    let fileManager = FileManager.default
+                    if let enumerator = fileManager.enumerator(atPath: resourcePath) {
+                        while let element = enumerator.nextObject() as? String {
+                            if element.hasSuffix(cleanedPath) || element.hasSuffix(path) {
+                                let foundPath = (resourcePath as NSString).appendingPathComponent(element)
+                                if FileManager.default.fileExists(atPath: foundPath) {
+                                    return foundPath
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If not found, return original path (will fail with proper error message)
+        return path
     }
 
     // MARK: - Mode & Test Run Info

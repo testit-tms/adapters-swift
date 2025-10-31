@@ -54,6 +54,7 @@ enum AppProperties {
     public static private(set) var configuration: [String: String]? 
 
     public static func initialize(from bundle: Bundle) {
+        print("[TestItAdapter] AppProperties: initialize(from bundle: \(bundle))")
         guard configuration == nil else { return } // Initialize only once
 
         guard let propertiesURL = bundle.url(forResource: PROPERTIES_FILE.deletingPathExtension, // "testit"
@@ -74,8 +75,8 @@ enum AppProperties {
     }
 
     public static func initialize(propertiesString: String) {
-         guard configuration == nil else { return }
-         logger.info("AppProperties: Initialization from passed string.")
+        guard configuration == nil else { return }
+        print("[TestItAdapter] AppProperties: Initialization from passed string.")
         configuration = loadPropertiesFromString(content: propertiesString) 
     }
 

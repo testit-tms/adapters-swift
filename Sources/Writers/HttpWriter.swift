@@ -96,20 +96,28 @@ class HttpWriter: Writer {
             
             
 
-            Self.logger.debug("Sending result by testRunId: \(self.configuration.testRunId)")
-            
             let testRunUuidString = configuration.testRunId
-            // let runId = UUID(uuidString: testRunUuidString)
+            guard !testRunUuidString.isEmpty && testRunUuidString.lowercased() != "null" else {
+                Self.logger.error("Cannot send test results: Test Run ID is missing or empty. In adapterMode=2, test run should be created automatically.")
+                return
+            }
+            
+            print("[TestItAdapter] Sending result by testRunId: \(testRunUuidString)")
+            Self.logger.debug("Sending result by testRunId: \(testRunUuidString)")
             
             let idsSentToApi = try client.sendTestResults(testRunUuid: testRunUuidString, models: resultsForApi) // Assuming returns [String]?
+            print("[TestItAdapter] ✓✓✓ Test result sent successfully! Received IDs: \(idsSentToApi)")
             if let firstIdString = idsSentToApi.first, let firstId = UUID(uuidString: firstIdString) {
                 // Assuming testResultCommon.uuid is a String key
                 testResults[testResultCommon.uuid!] = firstId
+                print("[TestItAdapter] Result ID mapped: \(testResultCommon.uuid!) -> \(firstId)")
             }
 
         } catch let error as TmsApiClientError {
+            print("[TestItAdapter] ERROR: API Client error writing autotest \(testResultCommon.externalId): \(error.localizedDescription)")
             Self.logger.error("API Client error writing autotest \(testResultCommon.externalId): \(error.localizedDescription). Response: N/A")
         } catch {
+            print("[TestItAdapter] ERROR: Failed to write autotest \(testResultCommon.externalId): \(error.localizedDescription)")
             Self.logger.error("Failed to write autotest \(testResultCommon.externalId): \(error.localizedDescription)")
         }
     }

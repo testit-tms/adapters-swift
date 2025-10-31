@@ -80,10 +80,12 @@ final class TestItWriter {
 
     
     func onTestDidFinish(for testCase: XCTestCase, fixtureIssues: [XCTIssue], testBodyIssues: [XCTIssue]) async {
+        print("[TestItAdapter] onTestDidFinish: \(testCase.name), fixtureIssues: \(fixtureIssues.count), testBodyIssues: \(testBodyIssues.count)")
         // logger.info("TestItWriter.onTestDidFinish called with \(fixtureIssues.count) fixture issues and \(testBodyIssues.count) test body issues.")
 
         // Determine the status and extract details from XCTIssue (now from testBodyIssues)
         let succeeded = testCase.testRun?.hasSucceeded ?? true 
+        print("[TestItAdapter] testRun?.hasSucceeded: \(testCase.testRun?.hasSucceeded ?? false)")
         // testRun?.hasSucceeded will be false if there were assertions or uncaught errors in the test body.
         // If testRun == nil (for example, the test did not start), we consider succeeded = true (did not fail).
 
@@ -95,6 +97,7 @@ final class TestItWriter {
         // and the presence of critical issues in testBodyIssues.
         // Fixture errors are already processed by FixtureService and will affect FixtureResult.
         let hasCriticalBodyIssues = testBodyIssues.contains { $0.type == .assertionFailure || $0.type == .thrownError }
+        print("[TestItAdapter] hasCriticalBodyIssues: \(hasCriticalBodyIssues)")
 
         if !succeeded || hasCriticalBodyIssues {
             finalStatus = .failed
@@ -133,12 +136,14 @@ final class TestItWriter {
             }
         }
 
+        print("[TestItAdapter] Calling stopTestWithResult with status: \(finalStatus), message: \(combinedMessage ?? "nil")")
         await testService.stopTestWithResult(
             testCase: testCase, 
             status: finalStatus, 
             message: combinedMessage, 
             trace: combinedTrace
         )
+        print("[TestItAdapter] stopTestWithResult completed")
     }
     //  result: TestResultCommon
     func onTestFailed(for testCase: XCTestCase) async {
@@ -148,7 +153,7 @@ final class TestItWriter {
 
     func onBeforeSetup(for testCase: XCTestCase) async {
         beforeTestStart = Date().timeIntervalSince1970 * 1000
-        fixtureService.onBeforeTestStart(testCase: testCase, start: beforeTestStart, lastClassContainerId: lastClassContainerId!)
+        fixtureService.onBeforeTestStart(testCase: testCase, start: beforeTestStart, lastClassContainerId: lastClassContainerId ?? "")
     }
 
     func onBeforeTeardown(for testCase: XCTestCase) async {
