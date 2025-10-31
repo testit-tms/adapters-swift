@@ -140,6 +140,40 @@ class TmsApiClient: ApiClient {
         return result
     }
 
+    func updateTestRun(uuid: String, name: String) throws {
+        Self.logger.debug("TmsApiClient: updateTestRun... with uuid: \(uuid), name: \(name)")
+        
+        // Get current test run to preserve other properties
+        let currentTestRun = try getTestRun(uuid: uuid)
+        
+        // Create a mutable copy and update name
+        var updatedTestRun = currentTestRun
+        updatedTestRun.name = name
+        
+        // Build update model using Converter
+        let updateModel = Converter.buildUpdateEmptyTestRunApiModel(updatedTestRun)
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        var operationError: Error?
+        
+        _ = TestRunsAPI.updateEmpty(updateEmptyTestRunApiModel: updateModel) { _, error in
+            if let error = error {
+                Self.logger.error("Error updating test run: \(error.localizedDescription)")
+                operationError = error
+            }
+            semaphore.signal()
+        }
+        
+        semaphore.wait()
+        
+        if let error = operationError {
+            Self.logger.error("Failed to update test run: \(error.localizedDescription)")
+            throw error
+        }
+        
+        Self.logger.debug("Updated test run \(uuid) name to: \(name)")
+    }
+
     func completeTestRun(uuid: String) throws {
         Self.logger.debug("TmsApiClient: completeTestRun...")
         lock.lock()

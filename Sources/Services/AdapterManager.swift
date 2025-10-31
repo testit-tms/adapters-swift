@@ -79,19 +79,29 @@ class AdapterManager {
         print("[TestItAdapter] createTestRunIfNeeded called")
         Self.logger.debug("Attempting to establish Test Run ID...")
 
-        let (initialTestRunId, isConfigTestRunIdMissing) = lock.withLock {
+        let (initialTestRunId, isConfigTestRunIdMissing, adapterMode) = lock.withLock {
             let testRunId = self.clientConfiguration.testRunId
-            return (testRunId, testRunId.isEmpty || testRunId.lowercased() == "null")
+            let mode = self.clientConfiguration.mode
+            return (testRunId, testRunId.isEmpty || testRunId.lowercased() == "null", mode)
         }
         
-        print("[TestItAdapter] Initial testRunId: '\(initialTestRunId)', missing: \(isConfigTestRunIdMissing), mode: \(self.clientConfiguration.mode)")
+        print("[TestItAdapter] Initial testRunId: '\(initialTestRunId)', missing: \(isConfigTestRunIdMissing), mode: '\(adapterMode)'")
+        
+        // In modes 0 and 1, testRunId must be provided
+        if adapterMode != "2" && isConfigTestRunIdMissing {
+            Self.logger.error("ERROR: adapterMode is '\(adapterMode)' but testRunId is missing or null. Test run ID is required for modes 0 and 1.")
+            print("[TestItAdapter] ERROR: adapterMode is '\(adapterMode)' but testRunId is missing or null.")
+        }
 
-        if !isConfigTestRunIdMissing && self.clientConfiguration.mode != "2" {
+        if !isConfigTestRunIdMissing && adapterMode != "2" {
             print("[TestItAdapter] Test Run ID already provided: \(initialTestRunId)")
             Self.logger.info("Test Run ID already provided in configuration: \(initialTestRunId). Using this ID.")
             // Ensure that writer knows about this ID, if it was set only in configuration
             // and not passed through the logic below (for example, when restarting with an already existing ID)
             self.writer?.setTestRun(testRunId: initialTestRunId)
+            
+            // Update test run name if provided and different from current name
+            await updateTestRunNameIfNeeded(testRunId: initialTestRunId)
             return
         }
 
@@ -106,6 +116,9 @@ class AdapterManager {
                 self.clientConfiguration.testRunId = envValue
                 self.writer?.setTestRun(testRunId: envValue)
             }
+            
+            // Update test run name if provided and different from current name
+            await updateTestRunNameIfNeeded(testRunId: envValue)
             return
         }
 
@@ -574,6 +587,31 @@ class AdapterManager {
 
     // MARK: - Mode & Test Run Info
 
+    private func updateTestRunNameIfNeeded(testRunId: String) async {
+        let testRunName = lock.withLock { self.clientConfiguration.testRunName }
+        
+        // Skip if testRunName is not provided or is "null"
+        guard !testRunName.isEmpty && testRunName.lowercased() != "null" else {
+            Self.logger.debug("testRunName is not provided or is null. Skipping name update.")
+            return
+        }
+        
+        do {
+            // Get current test run to compare names
+            let currentTestRun = try self.client.getTestRun(uuid: testRunId)
+            
+            // Compare current name with configured name
+            if currentTestRun.name != testRunName {
+                Self.logger.info("Test run name differs. Current: '\(currentTestRun.name)', Config: '\(testRunName)'. Updating...")
+                try self.client.updateTestRun(uuid: testRunId, name: testRunName)
+                Self.logger.info("Successfully updated test run name to: '\(testRunName)'")
+            } else {
+                Self.logger.debug("Test run name matches configuration: '\(testRunName)'. No update needed.")
+            }
+        } catch {
+            Self.logger.warning("Failed to update test run name: \(error.localizedDescription). Continuing with existing name.")
+        }
+    }
 
     func getTestFromTestRun() -> [String] {
         guard adapterConfig.shouldEnableTmsIntegration else { return [] }

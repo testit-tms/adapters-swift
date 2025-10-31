@@ -466,6 +466,38 @@ enum Converter {
             )
         }
     }
+    
+    // MARK: - Test Run Update Helpers
+    
+    static func buildUpdateEmptyTestRunApiModel(_ testRun: TestRunV2ApiResult) -> UpdateEmptyTestRunApiModel {
+        return UpdateEmptyTestRunApiModel(
+            id: testRun.id,
+            name: testRun.name,
+            description: testRun.description,
+            launchSource: testRun.launchSource,
+            attachments: buildAssignAttachmentApiModels(testRun.attachments),
+            links: buildUpdateLinkApiModels(testRun.links)
+        )
+    }
+    
+    static func buildAssignAttachmentApiModels(_ attachments: [AttachmentApiResult]) -> [AssignAttachmentApiModel] {
+        return attachments.map { attachment in
+            AssignAttachmentApiModel(id: attachment.id)
+        }
+    }
+    
+    static func buildUpdateLinkApiModels(_ links: [LinkApiResult]) -> [UpdateLinkApiModel] {
+        return links.map { link in
+            UpdateLinkApiModel(
+                id: link.id,
+                title: link.title,
+                url: link.url,
+                description: link.description,
+                type: link.type,
+                hasInfo: false
+            )
+        }
+    }
 
     private static func convertLabelApiResultsToLabelShortModels(_ labels: [LabelApiResult]) -> [LabelShortModel] {
         // No need to check for null as the input type is non-optional array
