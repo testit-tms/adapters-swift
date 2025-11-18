@@ -12,22 +12,10 @@ public class HtmlEscapeUtils {
         options: .caseInsensitive
     )
     
-    // Regex patterns to escape only non-escaped characters
-    private static let lessThanPattern = try! NSRegularExpression(
-        pattern: "(?<!\\\\)<",
-        options: []
-    )
-    
-    private static let greaterThanPattern = try! NSRegularExpression(
-        pattern: "(?<!\\\\)>",
-        options: []
-    )
-    
     /// Escapes HTML tags to prevent XSS attacks.
     /// First checks if the string contains HTML tags using regex pattern.
     /// Only performs escaping if HTML tags are detected.
-    /// Escapes all < as \\< and > as \\> only if they are not already escaped.
-    /// Uses regex with negative lookbehind to avoid double escaping.
+    /// Escapes all < as &lt; and > as &gt;.
     /// - Parameter text: The text to escape
     /// - Returns: Escaped text or original text if escaping is disabled or no HTML tags found
     public static func escapeHtmlTags(_ text: String?) -> String? {
@@ -45,22 +33,9 @@ public class HtmlEscapeUtils {
             return text // No HTML tags found, return original string
         }
         
-        // Use regex with negative lookbehind to escape only non-escaped characters
-        let textRange = NSRange(location: 0, length: text.utf16.count)
-        var result = lessThanPattern.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: textRange,
-            withTemplate: "\\\\<"
-        )
-        
-        let resultRange = NSRange(location: 0, length: result.utf16.count)
-        result = greaterThanPattern.stringByReplacingMatches(
-            in: result,
-            options: [],
-            range: resultRange,
-            withTemplate: "\\\\>"
-        )
+        // Use simple string replacement to escape HTML characters
+        var result = text.replacingOccurrences(of: "<", with: "&lt;")
+        result = result.replacingOccurrences(of: ">", with: "&gt;")
         
         return result
     }
