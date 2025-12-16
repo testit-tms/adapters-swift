@@ -9,33 +9,33 @@
 
 ```mermaid
 flowchart TD
-    A0["Базовый Тестовый Класс (TestItTestCase)
+    A0["TestItTestCase
 "]
-    A1["Менеджер Адаптера (AdapterManager)
+    A1["AdapterManager
 "]
-    A2["Конфигурация Адаптера
+    A2["Конфигурация
 "]
-    A3["Клиент API TestIT (ApiClient / TmsApiClient)
+    A3["TmsApiClient
 "]
-    A4["Наблюдатель Жизненного Цикла Теста (TestLifecycleObserver)
+    A4["TestLifecycleObserver
 "]
-    A5["Модель Результата Теста (TestResultCommon)
+    A5["TestResultCommon
 "]
-    A6["Хранилище Результатов (ResultStorage)
+    A6["ResultStorage
 "]
-    A7["Отправщик Результатов (Writer / HttpWriter)
+    A7["Writer / HttpWriter
 "]
-    A0 -- "Использует наблюдателя" --> A4
-    A0 -- "Загружает конфигурацию" --> A2
-    A1 -- "Управляет хранилищем" --> A6
-    A1 -- "Использует отправщик" --> A7
-    A1 -- "Управляет тест-ранами через..." --> A3
-    A2 -- "Предоставляет настройки мен..." --> A1
-    A2 -- "Предоставляет настройки API..." --> A3
-    A4 -- "Оповещает менеджера о событ..." --> A1
-    A4 -- "Создает модель результата" --> A5
-    A6 -- "Хранит результаты тестов" --> A5
-    A7 -- "Использует API клиент для о..." --> A3
+    A0 -- "Use" --> A4
+    A0 -- "Load" --> A2
+    A1 -- "Control" --> A6
+    A1 -- "Use" --> A7
+    A1 -- "Control" --> A3
+    A2 -- "Provide" --> A1
+    A2 -- "Provide" --> A3
+    A4 -- "Send event" --> A1
+    A4 -- "Add model" --> A5
+    A6 -- "Store" --> A5
+    A7 -- "Use" --> A3
 ```
 
 ## Chapters
