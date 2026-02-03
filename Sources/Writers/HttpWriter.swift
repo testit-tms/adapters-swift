@@ -230,19 +230,23 @@ class HttpWriter: Writer {
                         let autoTestModel = Converter.convertAutoTestApiResultToAutoTestModel(autoTestApiResult: autoTestApiResult)
 
                         var beforeFinish = beforeAllFixtures
-                        if let existingSetup = autoTestModel!.setup { // Assuming setup is [FixtureResultModel]?
-                            beforeFinish.append(contentsOf: existingSetup)
+                        if let existingSetup = autoTestModel!.setup {
+                            let convertedSetup = existingSetup.compactMap { Converter.autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) }
+                            beforeFinish.append(contentsOf: convertedSetup)
                         }
                         
                         let classAfterFixtures = Converter.convertFixture(fixtures: classContainer!.afterClassMethods, parentUuid: nil)
-                        var afterFinish = autoTestModel!.teardown ?? [] // Assuming teardown is [FixtureResultModel]?
+                        var afterFinish: [AutoTestStepApiModel] = []
+                        if let existingTeardown = autoTestModel!.teardown {
+                            afterFinish = existingTeardown.compactMap { Converter.autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) }
+                        }
                         afterFinish.append(contentsOf: classAfterFixtures)
                         afterFinish.append(contentsOf: afterAllFixtures)
 
                         let AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
                             autoTestModel: autoTestModel!,
-                            setup: Converter.autoTestStepModelToAutoTestStepApiModel(beforeFinish),
-                            teardown: Converter.autoTestStepModelToAutoTestStepApiModel(afterFinish),
+                            setup: (beforeFinish),
+                            teardown: (afterFinish),
                             isFlaky: false
                         )
                         Self.logger.debug("writeTests: Calling client.updateAutoTest with ")

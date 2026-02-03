@@ -196,7 +196,25 @@ extension LinkCreateApiModel: HtmlEscapable {
     }
 }
 
+extension LinkPostModel: HtmlEscapable {
+    public mutating func escapeHtmlProperties() {
+        self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
+        self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
+        // URL field should not be escaped as it might break the URL
+        // self.url = HtmlEscapeUtils.escapeHtmlTags(self.url)
+    }
+}
+
 extension LinkUpdateApiModel: HtmlEscapable {
+    public mutating func escapeHtmlProperties() {
+        self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
+        self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
+        // URL field should not be escaped as it might break the URL
+        // self.url = HtmlEscapeUtils.escapeHtmlTags(self.url)
+    }
+}
+
+extension LinkPutModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
         self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)

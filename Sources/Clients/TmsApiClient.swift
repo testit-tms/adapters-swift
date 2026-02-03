@@ -278,7 +278,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = AutoTestsAPI.updateAutoTest(AutoTestUpdateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
+        _ = AutoTestsAPI.updateAutoTest(autoTestUpdateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
             if let error = error {
                 Self.logger.error("Error updating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -308,14 +308,14 @@ class TmsApiClient: ApiClient {
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
-        var createdAutoTestModel: AutoTestModel?
+        var createdAutoTestApiResult: AutoTestApiResult? // AutoTestModel?
         
-        _ = AutoTestsAPI.createAutoTest(AutoTestCreateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AutoTestsAPI.createAutoTest(autoTestCreateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error creating autotest: \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
-                createdAutoTestModel = data
+                createdAutoTestApiResult = data
             } else {
                 Self.logger.error("createAutoTest returned no data and no error.")
                 operationError = TmsApiClientError.missingApiResponseData("createAutoTest returned no data and no error")
@@ -330,7 +330,7 @@ class TmsApiClient: ApiClient {
             throw error
         }
         
-        guard let createdTest = createdAutoTestModel else {
+        guard let createdTest = createdAutoTestApiResult else {
             Self.logger.error("createAutoTest response was nil after operation")
             throw TmsApiClientError.missingApiResponseData("createAutoTest response was nil after operation")
         }

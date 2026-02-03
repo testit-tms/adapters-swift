@@ -16,11 +16,8 @@ enum Converter {
         }
 
         let model = AutoTestCreateApiModel(
-            workItemIdsForLinkWithAutoTest: nil,
-            shouldCreateWorkItem: result.automaticCreationTestCases, // This was already mapped
-            attributes: [:],
             externalId: result.externalId,
-            links: convertPostLinks(result.linkItems),
+            externalKey: result.externalKey,
             projectId: projId,
             name: result.name,
             namespace: result.spaceName,
@@ -31,8 +28,12 @@ enum Converter {
             title: result.title,
             description: result.description,
             labels: labelsPostConvert(result.labels),
+            links: convertPostLinks(result.linkItems),
             isFlaky: false,
-            externalKey: result.externalKey
+            workItemIdsForLinkWithAutoTest: nil,
+            workItemIds: nil,
+            shouldCreateWorkItem: result.automaticCreationTestCases,
+            attributes: [:]
         )
         return model
     }
@@ -54,10 +55,9 @@ enum Converter {
         }
 
         let model = AutoTestUpdateApiModel(
-            id: nil, // UUID(uuidString: uuidString),
-            workItemIdsForLinkWithAutoTest: nil,
+            id: nil,
             externalId: result.externalId,
-            links: convertPutLinks(result.linkItems),
+            externalKey: result.externalKey,
             projectId: projId,
             name: result.name,
             namespace: result.spaceName,
@@ -68,8 +68,9 @@ enum Converter {
             title: result.title,
             description: result.description,
             labels: labelsPostConvert(result.labels),
+            links: convertPutLinks(result.linkItems),
             isFlaky: isFlaky,
-            externalKey: result.externalKey
+            workItemIdsForLinkWithAutoTest: nil
         )
         return model
     }
@@ -136,7 +137,7 @@ enum Converter {
     }
 
     static func autoTestStepModelToAutoTestStepApiModel(
-            autoTestStepModel: AutoTestStepModel,
+            autoTestStepModel: AutoTestStepModel
         ) -> AutoTestStepApiModel? {
             return AutoTestStepApiModel(
                 title: autoTestStepModel.title,
@@ -146,6 +147,18 @@ enum Converter {
                 } ?? []
             )
         }
+    
+    static func autoTestStepApiModelToAutoTestStepModel(
+        autoTestStepApiModel: AutoTestStepApiModel
+    ) -> AutoTestStepModel {
+        return AutoTestStepModel(
+            title: autoTestStepApiModel.title,
+            description: autoTestStepApiModel.description,
+            steps: autoTestStepApiModel.steps?.compactMap { step in
+                autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: step)
+            }
+        )
+    }
 
     static func autoTestModelToAutoTestUpdateApiModel(
         autoTestModel: AutoTestModel,
@@ -160,22 +173,23 @@ enum Converter {
         // If other fields were critical and optional, they would remain in a guard.
 
         let model = AutoTestUpdateApiModel(
-            id: autoTestModel.id, // Directly mapped from AutoTestModel.id
-            workItemIdsForLinkWithAutoTest: nil, // Assuming nil, adjust if AutoTestModel provides this data
-            externalId: autoTestModel.externalId, // Directly use non-optional value
-            links: links ?? autoTestModel.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) }, // Adjusted to map LinkModel to LinkUpdateApiModel
+            id: autoTestModel.id,
+            externalId: autoTestModel.externalId,
+            externalKey: autoTestModel.externalKey,
             projectId: autoTestModel.projectId,
-            name: autoTestModel.name, // Directly use non-optional value
+            name: autoTestModel.name,
             namespace: autoTestModel.namespace,
             classname: autoTestModel.classname,
-            steps: autoTestModel.steps,
-            setup: setup ?? autoTestModel.setup,
-            teardown: teardown ?? autoTestModel.teardown,
+            steps: autoTestModel.steps?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
+            setup: setup ?? autoTestModel.setup?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
+            teardown: teardown ?? autoTestModel.teardown?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
             title: autoTestModel.title,
             description: autoTestModel.description,
             labels: labelsConvert(autoTestModel.labels ?? []),
+            links: links ?? autoTestModel.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) },
             isFlaky: isFlaky,
-            externalKey: autoTestModel.externalKey // Directly mapped from AutoTestModel.externalKey if it exists
+            workItemIdsForLinkWithAutoTest: nil,
+            workItemIds: nil
         )
         return model
     }
@@ -211,7 +225,7 @@ enum Converter {
 
         let model = AutoTestResultsForTestRunModel(
             configurationId: configId,
-            links: convertPostLinks(result.resultLinks),
+            links: convertPostLinksToPostModel(result.resultLinks),
             failureReasonNames: nil, // New field, assuming nil. Populate if source exists in TestResultCommon.
             autoTestExternalId: result.externalId,
             outcome: outcome,
@@ -229,6 +243,22 @@ enum Converter {
         )
         return model
     }
+    
+    static func convertPostLinksToPostModel(_ links: [LinkItem]) -> [LinkPostModel] {
+            return links.compactMap { link -> LinkPostModel? in
+                guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
+                    logger.warning("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
+                    return nil
+                }
+                return LinkPostModel(
+                    title: link.title,
+                    url: link.url,
+                    description: link.description,
+                    type: linkType,
+                    hasInfo: false
+                )
+            }
+        }
 
     static func convertPostLinks(_ links: [LinkItem]) -> [LinkCreateApiModel] {
         return links.compactMap { link -> LinkCreateApiModel? in
@@ -429,9 +459,9 @@ enum Converter {
             name: apiResult.name,
             namespace: apiResult.namespace,
             classname: apiResult.classname,
-            steps: convertAutoTestStepApiResultsToSteps(apiResult.steps ?? []),
-            setup: convertAutoTestStepApiResultsToSteps(apiResult.setup ?? []),
-            teardown: convertAutoTestStepApiResultsToSteps(apiResult.teardown ?? []),
+            steps: convertAutoTestStepApiResultsToSteps(apiResult.steps ?? []).map { autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: $0) },
+            setup: convertAutoTestStepApiResultsToSteps(apiResult.setup ?? []).map { autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: $0) },
+            teardown: convertAutoTestStepApiResultsToSteps(apiResult.teardown ?? []).map { autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: $0) },
             title: apiResult.title,
             description: apiResult.description,
             labels: convertLabelApiResultsToLabelShortModels(apiResult.labels ?? []),
@@ -453,23 +483,22 @@ enum Converter {
         }
     }
 
-    private static func convertLinkApiResultsToPutLinks(_ links: [LinkApiResult]) -> [LinkUpdateApiModel] {
+    private static func convertLinkApiResultsToPutLinks(_ links: [LinkApiResult]) -> [LinkPutModel] {
         // No need to check for null as the input type is non-optional array
-        return links.compactMap { link -> LinkUpdateApiModel? in
+        return links.compactMap { link -> LinkPutModel? in
             // link.type is testit_api_client.LinkType? as per linter error.
-            // LinkUpdateApiModel expects a non-optional testit_api_client.LinkType for its 'type' parameter.
+            // LinkPutModel expects a non-optional testit_api_client.LinkType for its 'type' parameter.
             // So, we just need to unwrap link.type.
             guard let linkType = link.type else {
-                logger.warning("Warning: LinkApiResult.type is nil. LinkUpdateApiModel requires a non-optional LinkType.")
+                logger.warning("Warning: LinkApiResult.type is nil. LinkPutModel requires a non-optional LinkType.")
                 return nil
             }
-            // Requires LinkType to be RawRepresentable with rawValue matching type.value
 
             // link.url is now assumed non-optional based on linter error, so direct assignment is used.
             // The guard for link.url has been removed.
 
-            return LinkUpdateApiModel(
-                id: nil, // New field. LinkApiResult might have an ID, but its type and mapping to UUID? needs to be checked.
+            return LinkPutModel(
+                id: link.id, // LinkApiResult might have an ID
                 title: link.title,
                 url: link.url, // Use link.url directly
                 description: link.description,
