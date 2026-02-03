@@ -14,14 +14,14 @@ protocol ApiClient {
     func getTestFromTestRun(testRunUuid: String, configurationId: String) throws -> [String] // Parameters changed to non-optional String
 
     // AutoTest Management
-    func updateAutoTest(model: AutoTestPutModel) throws
-    func createAutoTest(model: AutoTestPostModel) throws -> String // Returns AutoTest ID (String)
+    func updateAutoTest(model: AutoTestUpdateApiModel) throws
+    func createAutoTest(model: AutoTestCreateApiModel) throws -> String // Returns AutoTest ID (String)
     func getAutoTestByExternalId(externalId: String) throws -> AutoTestApiResult? // Returns optional AutoTestApiResult
 
     // Work Item Linking
     func linkAutoTestToWorkItems(id: String, workItemIds: [String]) throws // Changed Iterable to Array
     func unlinkAutoTestToWorkItem(id: String, workItemId: String) throws -> Bool // Returns success status
-    func getWorkItemsLinkedToTest(id: String) throws -> [WorkItemIdentifierModel]
+    func getWorkItemsLinkedToTest(id: String) throws -> [AutoTestWorkItemIdentifierApiResult]
 
     // Test Results & Attachments
     func sendTestResults(testRunUuid: String, models: [AutoTestResultsForTestRunModel]) throws -> [String] // Returns list of result IDs (String)
