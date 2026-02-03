@@ -256,21 +256,21 @@ class TmsApiClient: ApiClient {
                           .compactMap { $0.autoTest?.externalId }
     }
 
-    func updateAutoTest(model: AutoTestPutModel) throws {
+    func updateAutoTest(model: AutoTestUpdateApiModel) throws {
         Self.logger.debug("TmsApiClient: updateAutoTest... with externalId: \(model.externalId)")
         
         // Escape HTML in model before sending
         var escapedModel = model
         escapedModel.escapeHtmlProperties()
         
-        // Log each property of AutoTestPutModel
-        Self.logger.debug("AutoTestPutModel details - id: \(escapedModel.id?.uuidString ?? "nil"), externalId: \(escapedModel.externalId), projectId: \(escapedModel.projectId.uuidString), name: \(escapedModel.name), namespace: \(escapedModel.namespace ?? "nil"), classname: \(escapedModel.classname ?? "nil"), title: \(escapedModel.title ?? "nil"), description: \(escapedModel.description ?? "nil"), isFlaky: \(escapedModel.isFlaky?.description ?? "nil"), externalKey: \(escapedModel.externalKey ?? "nil")")
-        Self.logger.debug("AutoTestPutModel links: \(String(describing: escapedModel.links))")
-        Self.logger.debug("AutoTestPutModel steps: \(String(describing: escapedModel.steps))")
-        Self.logger.debug("AutoTestPutModel setup: \(String(describing: escapedModel.setup))")
-        Self.logger.debug("AutoTestPutModel teardown: \(String(describing: escapedModel.teardown))")
-        Self.logger.debug("AutoTestPutModel labels: \(String(describing: escapedModel.labels))")
-        // Self.logger.debug("AutoTestPutModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
+        // Log each property of AutoTestUpdateApiModel
+        Self.logger.debug("AutoTestUpdateApiModel details - id: \(escapedModel.id?.uuidString ?? "nil"), externalId: \(escapedModel.externalId), projectId: \(escapedModel.projectId.uuidString), name: \(escapedModel.name), namespace: \(escapedModel.namespace ?? "nil"), classname: \(escapedModel.classname ?? "nil"), title: \(escapedModel.title ?? "nil"), description: \(escapedModel.description ?? "nil"), isFlaky: \(escapedModel.isFlaky?.description ?? "nil"), externalKey: \(escapedModel.externalKey ?? "nil")")
+        Self.logger.debug("AutoTestUpdateApiModel links: \(String(describing: escapedModel.links))")
+        Self.logger.debug("AutoTestUpdateApiModel steps: \(String(describing: escapedModel.steps))")
+        Self.logger.debug("AutoTestUpdateApiModel setup: \(String(describing: escapedModel.setup))")
+        Self.logger.debug("AutoTestUpdateApiModel teardown: \(String(describing: escapedModel.teardown))")
+        Self.logger.debug("AutoTestUpdateApiModel labels: \(String(describing: escapedModel.labels))")
+        // Self.logger.debug("AutoTestUpdateApiModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
 
         lock.lock()
         defer { lock.unlock() }
@@ -278,7 +278,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = AutoTestsAPI.updateAutoTest(autoTestPutModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
+        _ = AutoTestsAPI.updateAutoTest(AutoTestUpdateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
             if let error = error {
                 Self.logger.error("Error updating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -296,7 +296,7 @@ class TmsApiClient: ApiClient {
         Self.logger.debug("Updated autotest: \(model.externalId)")
     }
 
-    func createAutoTest(model: AutoTestPostModel) throws -> String {
+    func createAutoTest(model: AutoTestCreateApiModel) throws -> String {
         Self.logger.debug("TmsApiClient: createAutoTest... with externalId: \(model.externalId)")
 
         // Escape HTML in model before sending
@@ -310,7 +310,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var createdAutoTestModel: AutoTestModel?
         
-        _ = AutoTestsAPI.createAutoTest(autoTestPostModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AutoTestsAPI.createAutoTest(AutoTestCreateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error creating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -491,7 +491,7 @@ class TmsApiClient: ApiClient {
         return false // Default to false if loop completes without success, though ideally an error should have been thrown.
     }
 
-    func getWorkItemsLinkedToTest(id: String) throws -> [WorkItemIdentifierModel] {
+    func getWorkItemsLinkedToTest(id: String) throws -> [AutoTestWorkItemIdentifierApiResult] {
         Self.logger.debug("TmsApiClient: getWorkItemsLinkedToTest... with id: \(id)")
 
         // No lock needed according to Kotlin version? Consider if needed for safety if there are shared mutable states accessed by this path.
@@ -499,7 +499,7 @@ class TmsApiClient: ApiClient {
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
-        var workItemsResult: [WorkItemIdentifierModel]?
+        var workItemsResult: [AutoTestWorkItemIdentifierApiResult]?
         
         // Using false for isDeleted and isWorkItemDeleted as per the original synchronous call's parameters.
         _ = AutoTestsAPI.getWorkItemsLinkedToAutoTest(id: id, isDeleted: false, isWorkItemDeleted: false, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in

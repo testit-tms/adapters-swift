@@ -67,7 +67,7 @@ public protocol HtmlEscapable {
 import testit_api_client
 
 // Extend API models to support HTML escaping
-extension AutoTestPutModel: HtmlEscapable {
+extension AutoTestUpdateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
         self.namespace = HtmlEscapeUtils.escapeHtmlTags(self.namespace)
@@ -118,7 +118,7 @@ extension AutoTestPutModel: HtmlEscapable {
     }
 }
 
-extension AutoTestPostModel: HtmlEscapable {
+extension AutoTestCreateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
         self.namespace = HtmlEscapeUtils.escapeHtmlTags(self.namespace)
@@ -169,7 +169,7 @@ extension AutoTestPostModel: HtmlEscapable {
     }
 }
 
-extension AutoTestStepModel: HtmlEscapable {
+extension AutoTestStepApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.title = HtmlEscapeUtils.escapeHtmlTags(self.title) ?? ""
         self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
@@ -181,13 +181,13 @@ extension AutoTestStepModel: HtmlEscapable {
     }
 }
 
-extension LabelPostModel: HtmlEscapable {
+extension LabelApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
     }
 }
 
-extension LinkPostModel: HtmlEscapable {
+extension LinkCreateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
         self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)
@@ -196,7 +196,7 @@ extension LinkPostModel: HtmlEscapable {
     }
 }
 
-extension LinkPutModel: HtmlEscapable {
+extension LinkUpdateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.title = HtmlEscapeUtils.escapeHtmlTags(self.title)
         self.description = HtmlEscapeUtils.escapeHtmlTags(self.description)

@@ -36,9 +36,9 @@ class HttpWriter: Writer {
             if let existingAutotest = autotestModel {
                 // Self.logger.debug("Auto test exists. Updating auto test: \(existingAutotest.externalId)")
                 
-                let autoTestPutModel: AutoTestPutModel
+                let AutoTestUpdateApiModel: AutoTestUpdateApiModel
                 if testResultCommon.itemStatus == .failed {
-                    autoTestPutModel = Converter.autoTestModelToAutoTestPutModel(
+                    AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
                         autoTestModel: existingAutotest,
                         links: Converter.convertPutLinks(testResultCommon.linkItems), // linkItems: [LinkItemModel]?
                         isFlaky: false
@@ -48,7 +48,7 @@ class HttpWriter: Writer {
                         Self.logger.error("Invalid project ID format in configuration: \(self.configuration.projectId)")
                         return
                     }
-                    autoTestPutModel = Converter.testResultToAutoTestPutModel(
+                    AutoTestUpdateApiModel = Converter.testResultToAutoTestUpdateApiModel(
                         result: testResultCommon,
                         projectId: projectId,
                         isFlaky: false
@@ -58,7 +58,7 @@ class HttpWriter: Writer {
                 do {
                     Self.logger.debug("writeTest: Calling client.updateAutoTest with ")
                     // TODO: may be obsolete api call
-                    try client.updateAutoTest(model: autoTestPutModel)
+                    try client.updateAutoTest(model: AutoTestUpdateApiModel)
                     Self.logger.info("Successfully updated autotest with externalId: \(testResultCommon.externalId)")
                 } catch {
                     Self.logger.error("Error updating autotest with externalId \(testResultCommon.externalId): \(error.localizedDescription). Proceeding without this autotest ID.")
@@ -70,10 +70,10 @@ class HttpWriter: Writer {
                     Self.logger.error("Invalid project ID format in configuration: \(self.configuration.projectId)")
                     return
                 }
-                let newAutoTestPostModel = Converter.testResultToAutoTestPostModel(result: testResultCommon, projectId: projectId)
+                let newAutoTestCreateApiModel = Converter.testResultToAutoTestCreateApiModel(result: testResultCommon, projectId: projectId)
                 // Assuming createAutoTest returns the ID of the created autotest (String or UUID)
                 
-                let createdAutoTestIdString = try! client.createAutoTest(model: newAutoTestPostModel!)
+                let createdAutoTestIdString = try! client.createAutoTest(model: newAutoTestCreateApiModel!)
                 autoTestId = createdAutoTestIdString
                 
             }
@@ -124,7 +124,7 @@ class HttpWriter: Writer {
 
     private func updateTestLinkToWorkItems(autoTestId: String, workItemIds: [String]) throws {
         var mutableWorkItemIds = workItemIds 
-        let linkedWorkItems = try client.getWorkItemsLinkedToTest(id: autoTestId) // Assuming returns [WorkItemIdentifierModel]
+        let linkedWorkItems = try client.getWorkItemsLinkedToTest(id: autoTestId) // Assuming returns [AutoTestWorkItemIdentifierApiResult]
 
         for linkedWorkItem in linkedWorkItems {
             // TODO: there where globalId instead of id for some reason
@@ -168,14 +168,14 @@ class HttpWriter: Writer {
                 let afterEachFixtures = Converter.convertFixture(fixtures: container.afterEachTest, parentUuid: testUuidString)
                 afterClassFixtures.append(contentsOf: afterEachFixtures)
 
-                let autoTestPutModel = Converter.autoTestModelToAutoTestPutModel(
+                let AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
                     autoTestModel: autoTestModel,
                     setup: beforeClassFixtures,
                     teardown: afterClassFixtures,
                     isFlaky: false
                 )
                 Self.logger.debug("writeClass: Calling client.updateAutoTest with ")
-                try client.updateAutoTest(model: autoTestPutModel!)
+                try client.updateAutoTest(model: AutoTestUpdateApiModel!)
                 Self.logger.debug("writeClass: Successfully updated autotest \(autoTestModel.externalId) with class fixtures.")
             } catch {
                 Self.logger.error("writeClass: Failed for test \(testResult!.externalId): \(error.localizedDescription)")
@@ -221,10 +221,10 @@ class HttpWriter: Writer {
                                 Self.logger.error("Invalid project ID format in configuration: \(self.configuration.projectId)")
                                 return
                             }
-                            let newAutoTestPostModel = Converter.testResultToAutoTestPostModel(result: testResult!, projectId: projectId)
+                            let newAutoTestCreateApiModel = Converter.testResultToAutoTestCreateApiModel(result: testResult!, projectId: projectId)
                             // Assuming createAutoTest returns the ID of the created autotest (String or UUID)
                             
-                            let createdAutoTestIdString = try! client.createAutoTest(model: newAutoTestPostModel!)
+                            let createdAutoTestIdString = try! client.createAutoTest(model: newAutoTestCreateApiModel!)
                             autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResult!.externalId)
                         }
                         let autoTestModel = Converter.convertAutoTestApiResultToAutoTestModel(autoTestApiResult: autoTestApiResult)
@@ -239,14 +239,14 @@ class HttpWriter: Writer {
                         afterFinish.append(contentsOf: classAfterFixtures)
                         afterFinish.append(contentsOf: afterAllFixtures)
 
-                        let autoTestPutModel = Converter.autoTestModelToAutoTestPutModel(
+                        let AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
                             autoTestModel: autoTestModel!,
-                            setup: beforeFinish,
-                            teardown: afterFinish,
+                            setup: Converter.autoTestStepModelToAutoTestStepApiModel(beforeFinish),
+                            teardown: Converter.autoTestStepModelToAutoTestStepApiModel(afterFinish),
                             isFlaky: false
                         )
                         Self.logger.debug("writeTests: Calling client.updateAutoTest with ")
-                        try client.updateAutoTest(model: autoTestPutModel!)
+                        try client.updateAutoTest(model: AutoTestUpdateApiModel!)
 
                         let beforeResultEach = Converter.convertResultFixture(fixtures: classContainer!.beforeEachTest, parentUuid: testUuidString)
                         var beforeResultFinish = beforeResultAll

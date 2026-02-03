@@ -223,10 +223,10 @@ class HtmlEscapeUtilsTests: XCTestCase {
     
     // MARK: - Real API Model Tests
     
-    func testRealApiModel_AutoTestPostModel_EscapeHtmlProperties() {
+    func testRealApiModel_AutoTestCreateApiModel_EscapeHtmlProperties() {
         // Arrange
         let projectId = UUID()
-        var model = AutoTestPostModel(
+        var model = AutoTestCreateApiModel(
             externalId: "test-external-id",
             projectId: projectId,
             name: "<script>Test Name</script>",
@@ -240,7 +240,7 @@ class HtmlEscapeUtilsTests: XCTestCase {
         
         // Add some steps with HTML
         model.steps = [
-            AutoTestStepModel(
+            AutoTestStepApiModel(
                 title: "<h2>Step Title</h2>",
                 description: "<p>Step description</p>",
                 expected: "<div>Expected result</div>",
@@ -250,12 +250,12 @@ class HtmlEscapeUtilsTests: XCTestCase {
         
         // Add labels with HTML
         model.labels = [
-            LabelPostModel(name: "<label>Label Name</label>", value: "<value>Label Value</value>")
+            LabelApiModel(name: "<label>Label Name</label>", value: "<value>Label Value</value>")
         ]
         
         // Add links with HTML
         model.links = [
-            LinkPostModel(
+            LinkCreateApiModel(
                 title: "<title>Link Title</title>",
                 description: "<desc>Link Description</desc>",
                 url: "https://example.com",
@@ -395,10 +395,10 @@ class HtmlEscapeUtilsTests: XCTestCase {
     func testPerformanceRealApiModel_LargeDataSet() {
         // Arrange
         let projectId = UUID()
-        var models: [AutoTestPostModel] = []
+        var models: [AutoTestCreateApiModel] = []
         
         for i in 0..<100 {
-            var model = AutoTestPostModel(
+            var model = AutoTestCreateApiModel(
                 externalId: "test-\(i)",
                 projectId: projectId,
                 name: "<script>Test \(i)</script>",
@@ -409,7 +409,7 @@ class HtmlEscapeUtilsTests: XCTestCase {
             )
             
             model.steps = [
-                AutoTestStepModel(
+                AutoTestStepApiModel(
                     title: "<h2>Step \(i)</h2>",
                     description: "<p>Description \(i)</p>",
                     expected: "<div>Expected \(i)</div>",
@@ -660,7 +660,7 @@ extension HtmlEscapeUtilsTests {
     func testIntegration_RealApiWorkflow() {
         // Arrange - Test the complete workflow with real API models
         let projectId = UUID()
-        var autoTestModel = AutoTestPostModel(
+        var autoTestModel = AutoTestCreateApiModel(
             externalId: "integration-test",
             projectId: projectId,
             name: "<script>Integration Test</script>",

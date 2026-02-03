@@ -107,8 +107,8 @@ protocol ApiClient {
     func completeTestRun(uuid: String) throws // Завершить тест-ран
 
     // Управление Автотестами
-    func updateAutoTest(model: AutoTestPutModel) throws // Обновить существующий автотест
-    func createAutoTest(model: AutoTestPostModel) throws -> String // Создать новый автотест
+    func updateAutoTest(model: AutoTestUpdateApiModel) throws // Обновить существующий автотест
+    func createAutoTest(model: AutoTestCreateApiModel) throws -> String // Создать новый автотест
     func getAutoTestByExternalId(externalId: String) throws -> AutoTestApiResult? // Найти автотест по External ID
 
     // Связь с Work Items
@@ -122,7 +122,7 @@ protocol ApiClient {
 ```
 
 **Пояснение:**
-Этот протокол перечисляет основные операции, необходимые адаптеру для интеграции с TestIT, такие как управление тест-ранами, автотестами, ссылками и отправка результатов/вложений. Типы вроде `TestRunV2ApiResult`, `AutoTestPutModel`, `AutoTestResultsForTestRunModel` — это как раз те самые модели данных, специфичные для API TestIT (часто генерируемые).
+Этот протокол перечисляет основные операции, необходимые адаптеру для интеграции с TestIT, такие как управление тест-ранами, автотестами, ссылками и отправка результатов/вложений. Типы вроде `TestRunV2ApiResult`, `AutoTestUpdateApiModel`, `AutoTestResultsForTestRunModel` — это как раз те самые модели данных, специфичные для API TestIT (часто генерируемые).
 
 **2. `TmsApiClient.swift` (Упрощенная Реализация)**
 
@@ -236,12 +236,12 @@ class TmsApiClient: ApiClient {
     func getTestRun(uuid: String) throws -> TestRunV2ApiResult { /* ... using testRunsApi ... */ throw TmsApiClientError.notImplemented("getTestRun") }
     func completeTestRun(uuid: String) throws { /* ... using testRunsApi ... */ throw TmsApiClientError.notImplemented("completeTestRun") }
     func getTestFromTestRun(testRunUuid: String, configurationId: String) throws -> [String] { /* ... using testRunsApi ... */ throw TmsApiClientError.notImplemented("getTestFromTestRun") }
-    func updateAutoTest(model: AutoTestPutModel) throws { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("updateAutoTest") }
-    func createAutoTest(model: AutoTestPostModel) throws -> String { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("createAutoTest") }
+    func updateAutoTest(model: AutoTestUpdateApiModel) throws { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("updateAutoTest") }
+    func createAutoTest(model: AutoTestCreateApiModel) throws -> String { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("createAutoTest") }
     func getAutoTestByExternalId(externalId: String) throws -> AutoTestApiResult? { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("getAutoTestByExternalId") }
     func linkAutoTestToWorkItems(id: String, workItemIds: [String]) throws { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("linkAutoTestToWorkItems") }
     func unlinkAutoTestToWorkItem(id: String, workItemId: String) throws -> Bool { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("unlinkAutoTestToWorkItem") }
-    func getWorkItemsLinkedToTest(id: String) throws -> [WorkItemIdentifierModel] { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("getWorkItemsLinkedToTest") }
+    func getWorkItemsLinkedToTest(id: String) throws -> [AutoTestWorkItemIdentifierApiResult] { /* ... using autoTestsApi ... */ throw TmsApiClientError.notImplemented("getWorkItemsLinkedToTest") }
     func getTestResult(uuid: UUID) throws -> TestResultResponse { /* ... using testResultsApi ... */ throw TmsApiClientError.notImplemented("getTestResult") }
     func updateTestResult(uuid: UUID, model: TestResultUpdateV2Request) throws { /* ... using testResultsApi ... */ throw TmsApiClientError.notImplemented("updateTestResult") }
 }
