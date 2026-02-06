@@ -11,7 +11,7 @@ XCTest support only for now
 | 5.4      | 0.3.2-tms.5.4 |
 | 5.5      | 0.3.9-tms.5.5 |
 | 5.6      | 0.5.0-tms.5.6 |
-| Cloud    | 0.3.10 +      |
+| Cloud    | 0.5.0 +       |
 
 1. For current versions, see the releases tab. 
 2. Starting with 5.2, we have added a TMS postscript, which means that the utility is compatible with a specific enterprise version. 

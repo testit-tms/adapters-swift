@@ -16,24 +16,24 @@ enum Converter {
         }
 
         let model = AutoTestCreateApiModel(
+            projectId: projId,
             externalId: result.externalId,
             externalKey: result.externalKey,
-            projectId: projId,
             name: result.name,
             namespace: result.spaceName,
             classname: result.className,
+            title: result.title,
+            description: result.description,
+            isFlaky: false,
             steps: convertSteps(result.getSteps()),
             setup: nil,
             teardown: nil,
-            title: result.title,
-            description: result.description,
-            labels: labelsPostConvert(result.labels),
-            links: convertPostLinks(result.linkItems),
-            isFlaky: false,
-            workItemIdsForLinkWithAutoTest: nil,
-            workItemIds: nil,
             shouldCreateWorkItem: result.automaticCreationTestCases,
-            attributes: [:]
+            workItemIds: nil,
+            attributes: [:],
+            workItemIdsForLinkWithAutoTest: nil,
+            labels: labelsPostConvert(result.labels),
+            links: convertPostLinks(result.linkItems)
         )
         return model
     }
@@ -56,21 +56,24 @@ enum Converter {
 
         let model = AutoTestUpdateApiModel(
             id: nil,
+            projectId: projId,
             externalId: result.externalId,
             externalKey: result.externalKey,
-            projectId: projId,
+            
             name: result.name,
             namespace: result.spaceName,
             classname: result.className,
+            title: result.title,
+            description: result.description,
+            isFlaky: isFlaky,
             steps: convertSteps(result.getSteps()),
             setup: [],
             teardown: [],
-            title: result.title,
-            description: result.description,
+            workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
-            links: convertPutLinks(result.linkItems),
-            isFlaky: isFlaky,
-            workItemIdsForLinkWithAutoTest: nil
+            links: convertPutLinks(result.linkItems)
+            
+            
         )
         return model
     }
@@ -174,22 +177,22 @@ enum Converter {
 
         let model = AutoTestUpdateApiModel(
             id: autoTestModel.id,
+            projectId: autoTestModel.projectId,
             externalId: autoTestModel.externalId,
             externalKey: autoTestModel.externalKey,
-            projectId: autoTestModel.projectId,
             name: autoTestModel.name,
             namespace: autoTestModel.namespace,
             classname: autoTestModel.classname,
+            title: autoTestModel.title,
+            description: autoTestModel.description,
+            isFlaky: isFlaky,
             steps: autoTestModel.steps?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
             setup: setup ?? autoTestModel.setup?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
             teardown: teardown ?? autoTestModel.teardown?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
-            title: autoTestModel.title,
-            description: autoTestModel.description,
-            labels: labelsConvert(autoTestModel.labels ?? []),
-            links: links ?? autoTestModel.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) },
-            isFlaky: isFlaky,
+            workItemIds: nil,
             workItemIdsForLinkWithAutoTest: nil,
-            workItemIds: nil
+            labels: labelsConvert(autoTestModel.labels ?? []),
+            links: links ?? autoTestModel.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) }
         )
         return model
     }
