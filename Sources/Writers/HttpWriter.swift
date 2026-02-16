@@ -30,17 +30,15 @@ class HttpWriter: Writer {
             let autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResultCommon.externalId)
             let workItemIds = testResultCommon.workItemIds // Assuming this is [String]
             var autoTestId: String?
-            
-            let autotestModel = Converter.convertAutoTestApiResultToAutoTestModel(autoTestApiResult: autoTestApiResult)
 
-            if let existingAutotest = autotestModel {
+            if let existingAutotest = autoTestApiResult {
                 // Self.logger.debug("Auto test exists. Updating auto test: \(existingAutotest.externalId)")
                 
                 let AutoTestUpdateApiModel: AutoTestUpdateApiModel
                 if testResultCommon.itemStatus == .failed {
-                    AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
-                        autoTestModel: existingAutotest,
-                        links: Converter.convertPutLinks(testResultCommon.linkItems), // linkItems: [LinkItemModel]?
+                    AutoTestUpdateApiModel = Converter.autoTestApiResultToAutoTestUpdateApiModel(
+                        autoTestApiResult: existingAutotest,
+                        links: Converter.convertPutLinks(testResultCommon.linkItems),
                         isFlaky: false
                     )!
                 } else {
@@ -154,8 +152,7 @@ class HttpWriter: Writer {
             let testResult = testResultOpt
 
             do {
-                let autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResult!.externalId)
-                guard let autoTestModel = Converter.convertAutoTestApiResultToAutoTestModel(autoTestApiResult: autoTestApiResult) else {
+                guard let autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResult!.externalId) else {
                     Self.logger.warning("writeClass: Could not convert API result to autoTestModel for \(testResult!.externalId)")
                     return
                 }
@@ -168,15 +165,15 @@ class HttpWriter: Writer {
                 let afterEachFixtures = Converter.convertFixture(fixtures: container.afterEachTest, parentUuid: testUuidString)
                 afterClassFixtures.append(contentsOf: afterEachFixtures)
 
-                let AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
-                    autoTestModel: autoTestModel,
+                let AutoTestUpdateApiModel = Converter.autoTestApiResultToAutoTestUpdateApiModel(
+                    autoTestApiResult: autoTestApiResult,
                     setup: beforeClassFixtures,
                     teardown: afterClassFixtures,
                     isFlaky: false
                 )
                 Self.logger.debug("writeClass: Calling client.updateAutoTest with ")
                 try client.updateAutoTest(model: AutoTestUpdateApiModel!)
-                Self.logger.debug("writeClass: Successfully updated autotest \(autoTestModel.externalId) with class fixtures.")
+                Self.logger.debug("writeClass: Successfully updated autotest \(String(describing: autoTestApiResult.externalId)) with class fixtures.")
             } catch {
                 Self.logger.error("writeClass: Failed for test \(testResult!.externalId): \(error.localizedDescription)")
             }
@@ -227,24 +224,23 @@ class HttpWriter: Writer {
                             let createdAutoTestIdString = try! client.createAutoTest(model: newAutoTestCreateApiModel!)
                             autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResult!.externalId)
                         }
-                        let autoTestModel = Converter.convertAutoTestApiResultToAutoTestModel(autoTestApiResult: autoTestApiResult)
 
                         var beforeFinish = beforeAllFixtures
-                        if let existingSetup = autoTestModel!.setup {
-                            let convertedSetup = existingSetup.compactMap { Converter.autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) }
+                        if let existingSetup = autoTestApiResult!.setup {
+                            let convertedSetup = existingSetup.compactMap { Converter.autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) }
                             beforeFinish.append(contentsOf: convertedSetup)
                         }
                         
                         let classAfterFixtures = Converter.convertFixture(fixtures: classContainer!.afterClassMethods, parentUuid: nil)
                         var afterFinish: [AutoTestStepApiModel] = []
-                        if let existingTeardown = autoTestModel!.teardown {
-                            afterFinish = existingTeardown.compactMap { Converter.autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) }
+                        if let existingTeardown = autoTestApiResult!.teardown {
+                            afterFinish = existingTeardown.compactMap { Converter.autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) }
                         }
                         afterFinish.append(contentsOf: classAfterFixtures)
                         afterFinish.append(contentsOf: afterAllFixtures)
 
-                        let AutoTestUpdateApiModel = Converter.autoTestModelToAutoTestUpdateApiModel(
-                            autoTestModel: autoTestModel!,
+                        let AutoTestUpdateApiModel = Converter.autoTestApiResultToAutoTestUpdateApiModel(
+                            autoTestApiResult: autoTestApiResult!,
                             setup: (beforeFinish),
                             teardown: (afterFinish),
                             isFlaky: false

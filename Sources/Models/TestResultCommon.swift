@@ -34,7 +34,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
 
     // Using CodingKeys for mapping private properties if encoding/decoding is needed
     enum CodingKeys: String, CodingKey {
-        case uuid, externalId, workItemIds, className, spaceName, labels, linkItems, resultLinks, attachments, name, title, message, itemStatus, itemStage, description, steps, start, stop, throwable, parameters, automaticCreationTestCases, externalKey, originalTestName
+        case uuid, externalId, workItemIds, className, spaceName, labels, linkItems, resultLinks, attachments, name, title, message, itemStatus, itemStage, description, steps, start, stop, throwable, parameters, automaticCreationTestCases, externalKey, originalTestName, tags
     }
 
     // Initializer for decoding
@@ -67,7 +67,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
     }
     
     // Initializer for creating an instance
-    init(uuid: String? = nil, externalId: String = "", workItemIds: [String] = [], className: String = "", spaceName: String = "", labels: [Label] = [], linkItems: [LinkItem] = [], resultLinks: [LinkItem] = [], attachments: [String] = [], name: String = "", title: String = "", message: String = "", itemStatus: ItemStatus? = nil, itemStage: ItemStage? = nil, description: String = "", steps: [StepResult] = [], start: Int64 = 0, stop: Int64 = 0, throwable: Error? = nil, parameters: [String : String] = [:], automaticCreationTestCases: Bool = false, externalKey: String? = nil, originalTestName: String = "") {
+    init(uuid: String? = nil, externalId: String = "", workItemIds: [String] = [], className: String = "", spaceName: String = "", labels: [Label] = [], tags: [String] = [], linkItems: [LinkItem] = [], resultLinks: [LinkItem] = [], attachments: [String] = [], name: String = "", title: String = "", message: String = "", itemStatus: ItemStatus? = nil, itemStage: ItemStage? = nil, description: String = "", steps: [StepResult] = [], start: Int64 = 0, stop: Int64 = 0, throwable: Error? = nil, parameters: [String : String] = [:], automaticCreationTestCases: Bool = false, externalKey: String? = nil, originalTestName: String = "") {
         self.uuid = uuid
         self.externalId = externalId
         self.workItemIds = workItemIds

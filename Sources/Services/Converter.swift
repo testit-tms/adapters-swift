@@ -33,8 +33,8 @@ enum Converter {
             attributes: [:],
             workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
-            tags: result.tags,
-            links: convertPostLinks(result.linkItems)
+            links: convertPostLinks(result.linkItems),
+            tags: result.tags
         )
         return model
     }
@@ -72,10 +72,8 @@ enum Converter {
             teardown: [],
             workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
-            tags: result.tags,
-            links: convertPutLinks(result.linkItems)
-            
-            
+            links: convertPutLinks(result.linkItems),
+            tags: result.tags
         )
         return model
     }
@@ -124,22 +122,34 @@ enum Converter {
         return parentUuid != nil && fixture.parent == parentUuid
     }
 
-    static func autoTestModelToAutoTestUpdateApiModel(autoTestModel: AutoTestModel) -> AutoTestUpdateApiModel? {
-        return autoTestModelToAutoTestUpdateApiModel(autoTestModel: autoTestModel, links: nil, isFlaky: nil, setup: nil, teardown: nil)
+    static func autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: AutoTestApiResult) -> AutoTestUpdateApiModel? {
+        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: nil, isFlaky: nil, setup: nil, teardown: nil)
     }
 
-    static func autoTestModelToAutoTestUpdateApiModel(autoTestModel: AutoTestModel,
+    static func autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: AutoTestApiResult,
                                                 setup: [AutoTestStepApiModel]?,
                                                 teardown: [AutoTestStepApiModel]?,
                                                 isFlaky: Bool?) -> AutoTestUpdateApiModel? {
-        return autoTestModelToAutoTestUpdateApiModel(autoTestModel: autoTestModel, links: nil, isFlaky: isFlaky, setup: setup, teardown: teardown)
+        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: nil, isFlaky: isFlaky, setup: setup, teardown: teardown)
     }
 
-    static func autoTestModelToAutoTestUpdateApiModel(autoTestModel: AutoTestModel,
+    static func autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: AutoTestApiResult,
                                                 links: [LinkUpdateApiModel]?,
                                                 isFlaky: Bool?) -> AutoTestUpdateApiModel? {
-        return autoTestModelToAutoTestUpdateApiModel(autoTestModel: autoTestModel, links: links, isFlaky: isFlaky, setup: nil, teardown: nil)
+        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: links, isFlaky: isFlaky, setup: nil, teardown: nil)
     }
+
+    static func autoTestStepApiResultToAutoTestStepApiModel(
+            autoTestStepApiResult: AutoTestStepApiResult
+        ) -> AutoTestStepApiModel? {
+            return AutoTestStepApiModel(
+                title: autoTestStepApiResult.title,
+                description: autoTestStepApiResult.description,
+                steps: autoTestStepApiResult.steps?.compactMap { step in
+                    autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: step)
+                } ?? []
+            )
+        }
 
     static func autoTestStepModelToAutoTestStepApiModel(
             autoTestStepModel: AutoTestStepModel
@@ -165,37 +175,37 @@ enum Converter {
         )
     }
 
-    static func autoTestModelToAutoTestUpdateApiModel(
-        autoTestModel: AutoTestModel,
+    static func autoTestApiResultToAutoTestUpdateApiModel(
+        autoTestApiResult: AutoTestApiResult,
         links: [LinkUpdateApiModel]?,
         isFlaky: Bool?,
         setup: [AutoTestStepApiModel]?,
         teardown: [AutoTestStepApiModel]?
     ) -> AutoTestUpdateApiModel? {
-        // externalId and name are non-optional in AutoTestModel, so no need to conditionally bind them.
+        // externalId and name are non-optional in AutoTestApiResult, so no need to conditionally bind them.
         // The guard statement is removed as there are no longer any optional values to check here
         // that would cause the function to return nil early based on missing externalId or name.
         // If other fields were critical and optional, they would remain in a guard.
 
         let model = AutoTestUpdateApiModel(
-            id: autoTestModel.id,
-            projectId: autoTestModel.projectId,
-            externalId: autoTestModel.externalId,
-            externalKey: autoTestModel.externalKey,
-            name: autoTestModel.name,
-            namespace: autoTestModel.namespace,
-            classname: autoTestModel.classname,
-            title: autoTestModel.title,
-            description: autoTestModel.description,
+            id: autoTestApiResult.id,
+            projectId: autoTestApiResult.projectId,
+            externalId: autoTestApiResult.externalId!,
+            externalKey: autoTestApiResult.externalKey,
+            name: autoTestApiResult.name,
+            namespace: autoTestApiResult.namespace,
+            classname: autoTestApiResult.classname,
+            title: autoTestApiResult.title,
+            description: autoTestApiResult.description,
             isFlaky: isFlaky,
-            steps: autoTestModel.steps?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
-            setup: setup ?? autoTestModel.setup?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
-            teardown: teardown ?? autoTestModel.teardown?.compactMap { autoTestStepModelToAutoTestStepApiModel(autoTestStepModel: $0) },
+            steps: autoTestApiResult.steps?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
+            setup: setup ?? autoTestApiResult.setup?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
+            teardown: teardown ?? autoTestApiResult.teardown?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
             workItemIds: nil,
             workItemIdsForLinkWithAutoTest: nil,
-            labels: labelsConvert(autoTestModel.labels ?? []),
-            tags: autoTestModel.tags,
-            links: links ?? autoTestModel.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) }
+            labels: labelsConvert(convertLabelApiResultsToLabelShortModels(autoTestApiResult.labels ?? [])),
+            links: links ?? autoTestApiResult.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) },
+            tags: autoTestApiResult.tags
         )
         return model
     }
@@ -471,7 +481,6 @@ enum Converter {
             title: apiResult.title,
             description: apiResult.description,
             labels: convertLabelApiResultsToLabelShortModels(apiResult.labels ?? []),
-            tags: apiResult.tags,
             isFlaky: apiResult.isFlaky,
             externalKey: apiResult.externalKey
         )
