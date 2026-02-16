@@ -36,6 +36,7 @@ final class TestService {
             className: className,
             spaceName: spaceName,
             labels: [],
+            tags: [],
             linkItems: [],
             name: testName,
             externalKey: Utils.genExternalKey(from: testCase, originalTestName: testName),

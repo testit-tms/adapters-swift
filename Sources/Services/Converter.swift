@@ -33,6 +33,7 @@ enum Converter {
             attributes: [:],
             workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
+            tags: result.tags,
             links: convertPostLinks(result.linkItems)
         )
         return model
@@ -71,6 +72,7 @@ enum Converter {
             teardown: [],
             workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
+            tags: result.tags,
             links: convertPutLinks(result.linkItems)
             
             
@@ -192,6 +194,7 @@ enum Converter {
             workItemIds: nil,
             workItemIdsForLinkWithAutoTest: nil,
             labels: labelsConvert(autoTestModel.labels ?? []),
+            tags: autoTestModel.tags,
             links: links ?? autoTestModel.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) }
         )
         return model
@@ -468,6 +471,7 @@ enum Converter {
             title: apiResult.title,
             description: apiResult.description,
             labels: convertLabelApiResultsToLabelShortModels(apiResult.labels ?? []),
+            tags: apiResult.tags,
             isFlaky: apiResult.isFlaky,
             externalKey: apiResult.externalKey
         )

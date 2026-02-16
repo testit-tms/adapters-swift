@@ -12,6 +12,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
     var className: String = ""
     var spaceName: String = ""
     var labels: [Label] = []
+    var tags: [String] = []
     var linkItems: [LinkItem] = []
     var resultLinks: [LinkItem] = []
     var attachments: [String] = []
@@ -45,6 +46,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         className = try container.decode(String.self, forKey: .className)
         spaceName = try container.decode(String.self, forKey: .spaceName)
         labels = try container.decode([Label].self, forKey: .labels)
+        tags = try container.decode([String].self, forKey: .tags)
         linkItems = try container.decode([LinkItem].self, forKey: .linkItems)
         resultLinks = try container.decode([LinkItem].self, forKey: .resultLinks)
         attachments = try container.decode([String].self, forKey: .attachments)
@@ -72,6 +74,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         self.className = className
         self.spaceName = spaceName
         self.labels = labels
+        self.tags = tags
         self.linkItems = linkItems
         self.resultLinks = resultLinks
         self.attachments = attachments
@@ -101,6 +104,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         try container.encode(className, forKey: .className)
         try container.encode(spaceName, forKey: .spaceName)
         try container.encode(labels, forKey: .labels)
+        try container.encode(tags, forKey: .tags)
         try container.encode(linkItems, forKey: .linkItems)
         try container.encode(resultLinks, forKey: .resultLinks)
         try container.encode(attachments, forKey: .attachments)
@@ -148,7 +152,8 @@ extension TestResultCommon {
         self.attachments = context.attachments ?? self.attachments
         self.uuid = context.uuid ?? self.uuid
         self.parameters = context.parameters ?? self.parameters
-        self.labels = context.labels ?? self.labels 
+        self.labels = context.labels ?? self.labels
+        self.tags = context.tags ?? self.tags
         self.linkItems = context.links ?? self.linkItems
         self.resultLinks = context.resultLinks ?? self.resultLinks
         self.externalKey = context.externalKey ?? self.externalKey

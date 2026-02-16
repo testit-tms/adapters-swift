@@ -16,6 +16,7 @@ public struct TestItContext {
     var description: String?
     var parameters: [String: String]?
     var labels: [Label]?
+    var tags: [String]?
     var externalKey: String?
 }
 
@@ -84,6 +85,11 @@ public class TestItContextBuilder {
 
     public func Labels(_ labels: [LabelEntity]?) -> TestItContextBuilder {
         context.labels = labels?.map { $0.toLabel() }
+        return self
+    }
+
+    public func Tags(_ tags: [String]?) -> TestItContextBuilder {
+        context.tags = tags
         return self
     }
 
