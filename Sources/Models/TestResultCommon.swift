@@ -12,6 +12,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
     var className: String = ""
     var spaceName: String = ""
     var labels: [Label] = []
+    var tags: [String] = []
     var linkItems: [LinkItem] = []
     var resultLinks: [LinkItem] = []
     var attachments: [String] = []
@@ -33,7 +34,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
 
     // Using CodingKeys for mapping private properties if encoding/decoding is needed
     enum CodingKeys: String, CodingKey {
-        case uuid, externalId, workItemIds, className, spaceName, labels, linkItems, resultLinks, attachments, name, title, message, itemStatus, itemStage, description, steps, start, stop, throwable, parameters, automaticCreationTestCases, externalKey, originalTestName
+        case uuid, externalId, workItemIds, className, spaceName, labels, linkItems, resultLinks, attachments, name, title, message, itemStatus, itemStage, description, steps, start, stop, throwable, parameters, automaticCreationTestCases, externalKey, originalTestName, tags
     }
 
     // Initializer for decoding
@@ -45,6 +46,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         className = try container.decode(String.self, forKey: .className)
         spaceName = try container.decode(String.self, forKey: .spaceName)
         labels = try container.decode([Label].self, forKey: .labels)
+        tags = try container.decode([String].self, forKey: .tags)
         linkItems = try container.decode([LinkItem].self, forKey: .linkItems)
         resultLinks = try container.decode([LinkItem].self, forKey: .resultLinks)
         attachments = try container.decode([String].self, forKey: .attachments)
@@ -65,13 +67,14 @@ struct TestResultCommon: Codable, ResultWithSteps {
     }
     
     // Initializer for creating an instance
-    init(uuid: String? = nil, externalId: String = "", workItemIds: [String] = [], className: String = "", spaceName: String = "", labels: [Label] = [], linkItems: [LinkItem] = [], resultLinks: [LinkItem] = [], attachments: [String] = [], name: String = "", title: String = "", message: String = "", itemStatus: ItemStatus? = nil, itemStage: ItemStage? = nil, description: String = "", steps: [StepResult] = [], start: Int64 = 0, stop: Int64 = 0, throwable: Error? = nil, parameters: [String : String] = [:], automaticCreationTestCases: Bool = false, externalKey: String? = nil, originalTestName: String = "") {
+    init(uuid: String? = nil, externalId: String = "", workItemIds: [String] = [], className: String = "", spaceName: String = "", labels: [Label] = [], tags: [String] = [], linkItems: [LinkItem] = [], resultLinks: [LinkItem] = [], attachments: [String] = [], name: String = "", title: String = "", message: String = "", itemStatus: ItemStatus? = nil, itemStage: ItemStage? = nil, description: String = "", steps: [StepResult] = [], start: Int64 = 0, stop: Int64 = 0, throwable: Error? = nil, parameters: [String : String] = [:], automaticCreationTestCases: Bool = false, externalKey: String? = nil, originalTestName: String = "") {
         self.uuid = uuid
         self.externalId = externalId
         self.workItemIds = workItemIds
         self.className = className
         self.spaceName = spaceName
         self.labels = labels
+        self.tags = tags
         self.linkItems = linkItems
         self.resultLinks = resultLinks
         self.attachments = attachments
@@ -101,6 +104,7 @@ struct TestResultCommon: Codable, ResultWithSteps {
         try container.encode(className, forKey: .className)
         try container.encode(spaceName, forKey: .spaceName)
         try container.encode(labels, forKey: .labels)
+        try container.encode(tags, forKey: .tags)
         try container.encode(linkItems, forKey: .linkItems)
         try container.encode(resultLinks, forKey: .resultLinks)
         try container.encode(attachments, forKey: .attachments)
@@ -148,7 +152,8 @@ extension TestResultCommon {
         self.attachments = context.attachments ?? self.attachments
         self.uuid = context.uuid ?? self.uuid
         self.parameters = context.parameters ?? self.parameters
-        self.labels = context.labels ?? self.labels 
+        self.labels = context.labels ?? self.labels
+        self.tags = context.tags ?? self.tags
         self.linkItems = context.links ?? self.linkItems
         self.resultLinks = context.resultLinks ?? self.resultLinks
         self.externalKey = context.externalKey ?? self.externalKey

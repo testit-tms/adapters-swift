@@ -207,7 +207,8 @@ Description of Metadata builder methods:
 - `ExternalId` - unique internal autotest ID (used in Test IT)
 - `Title` - autotest name specified in the autotest card. If not specified, the name from the displayName method is used
 - `Description` - autotest description specified in the autotest card
-- `Labels` - tags listed in the autotest card
+- `Labels` - labels listed in the autotest card
+- `Tags` - tags listed in the autotest card
 - `Links` - links listed in the autotest card
 - `Classname` - name of the classname (TODO)
 - `Namespace` - name of the package (TODO)

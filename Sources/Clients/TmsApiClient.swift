@@ -270,6 +270,7 @@ class TmsApiClient: ApiClient {
         Self.logger.debug("AutoTestUpdateApiModel setup: \(String(describing: escapedModel.setup))")
         Self.logger.debug("AutoTestUpdateApiModel teardown: \(String(describing: escapedModel.teardown))")
         Self.logger.debug("AutoTestUpdateApiModel labels: \(String(describing: escapedModel.labels))")
+        Self.logger.debug("AutoTestUpdateApiModel tags: \(String(describing: escapedModel.tags))")
         // Self.logger.debug("AutoTestUpdateApiModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
 
         lock.lock()
