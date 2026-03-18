@@ -84,8 +84,8 @@ enum Converter {
     ) -> TestResultUpdateV2Request {
         let model = TestResultUpdateV2Request(
             failureClassIds: result.failureClassIds,
-            outcome: result.outcome, // This field is deprecated in the new model
-            statusCode: nil, // New field, assuming nil. Populate if source exists in TestResultResponse.
+            // outcome: result.outcome, // This field is deprecated in the new model
+            statusCode: result.statusCode, // New field, assuming nil. Populate if source exists in TestResultResponse.
             comment: result.comment,
             links: result.links,
             stepResults: result.stepResults,
@@ -217,6 +217,12 @@ enum Converter {
         return testResultToAutoTestResultsForTestRunModel(result: result, configurationId: configurationId, setupResults: nil, teardownResults: nil)
     }
 
+    // Passed, failed, Skipped, InProgress, Blocked
+    static func mapStatusType(status: string) -> TestStatusType {
+        if status == "Passed" return TestStatusType.Passed
+        // TODO: complete
+    }
+
     static func testResultToAutoTestResultsForTestRunModel(result: TestResultCommon,
                                                            configurationId: UUID?,
                                                            setupResults: [AttachmentPutModelAutoTestStepResultsModel]?,
@@ -226,7 +232,8 @@ enum Converter {
         // Safely unwrap required fields
         // externalId, start, and stop are non-optional in TestResultCommon
         guard let itemStatusValue = result.itemStatus?.value, // Assuming ItemStatus has a String 'value' property
-              let outcome = AvailableTestResultOutcome(rawValue: itemStatusValue), // Use guard let for failable init
+              //let outcome = AvailableTestResultOutcome(rawValue: itemStatusValue), // Use guard let for failable init
+              let statusType = mapStatusType(itemStatusValue)
               let uuidString = result.uuid,
               let configId = configurationId ?? UUID(uuidString: uuidString) // Use guard let for nil-coalescing with failable init
         else {
@@ -244,7 +251,8 @@ enum Converter {
             links: convertPostLinksToPostModel(result.resultLinks),
             failureReasonNames: nil, // New field, assuming nil. Populate if source exists in TestResultCommon.
             autoTestExternalId: result.externalId,
-            outcome: outcome,
+            //outcome: outcome,
+            statusType: statusType
             message: message,
             traces: traces,
             startedOn: Date(timeIntervalSince1970: TimeInterval(result.start / 1000)), // Convert Int64 ms to Date
