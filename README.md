@@ -1,5 +1,5 @@
 # Test IT Swift integrations
-
+![Test IT](https://raw.githubusercontent.com/testit-tms/adapters-swift/main/images/banner.png)
 
 ## Compatibility
 
