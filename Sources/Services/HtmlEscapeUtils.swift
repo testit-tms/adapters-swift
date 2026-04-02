@@ -69,6 +69,7 @@ import testit_api_client
 // Extend API models to support HTML escaping
 extension AutoTestUpdateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        let originalExternalId = self.externalId
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
         self.namespace = HtmlEscapeUtils.escapeHtmlTags(self.namespace)
         self.classname = HtmlEscapeUtils.escapeHtmlTags(self.classname)
@@ -115,11 +116,13 @@ extension AutoTestUpdateApiModel: HtmlEscapable {
             }
             self.links = linksArray
         }
+        self.externalId = originalExternalId
     }
 }
 
 extension AutoTestCreateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        let originalExternalId = self.externalId
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
         self.namespace = HtmlEscapeUtils.escapeHtmlTags(self.namespace)
         self.classname = HtmlEscapeUtils.escapeHtmlTags(self.classname)
@@ -166,6 +169,7 @@ extension AutoTestCreateApiModel: HtmlEscapable {
             }
             self.links = linksArray
         }
+        self.externalId = originalExternalId
     }
 }
 
@@ -225,6 +229,7 @@ extension LinkPutModel: HtmlEscapable {
 
 extension AutoTestResultsForTestRunModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        let originalAutoTestExternalId = self.autoTestExternalId
         self.message = HtmlEscapeUtils.escapeHtmlTags(self.message)
         self.traces = HtmlEscapeUtils.escapeHtmlTags(self.traces)
         
@@ -259,6 +264,7 @@ extension AutoTestResultsForTestRunModel: HtmlEscapable {
             }
             self.links = links
         }
+        self.autoTestExternalId = originalAutoTestExternalId
     }
 }
 

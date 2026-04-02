@@ -289,6 +289,34 @@ class HtmlEscapeUtilsTests: XCTestCase {
         XCTAssertEqual(model.links?[0].description, "\\<desc>Link Description\\</desc>")
         XCTAssertEqual(model.links?[0].url, "https://example.com") // URL should remain unchanged
     }
+
+    func testRealApiModel_AutoTestCreateApiModel_DoesNotEscapeExternalId() {
+        let projectId = UUID()
+        var model = AutoTestCreateApiModel(
+            externalId: "<test>",
+            projectId: projectId,
+            name: "<b>Name</b>"
+        )
+
+        model.escapeHtmlProperties()
+
+        XCTAssertEqual(model.externalId, "<test>")
+        XCTAssertEqual(model.name, "\\<b>Name\\</b>")
+    }
+
+    func testRealApiModel_AutoTestUpdateApiModel_DoesNotEscapeExternalId() {
+        let projectId = UUID()
+        var model = AutoTestUpdateApiModel(
+            projectId: projectId,
+            externalId: "<test>",
+            name: "<b>Name</b>"
+        )
+
+        model.escapeHtmlProperties()
+
+        XCTAssertEqual(model.externalId, "<test>")
+        XCTAssertEqual(model.name, "\\<b>Name\\</b>")
+    }
     
     func testRealApiModel_AutoTestResultsForTestRunModel_EscapeHtmlProperties() {
         // Arrange
@@ -337,6 +365,20 @@ class HtmlEscapeUtilsTests: XCTestCase {
         XCTAssertEqual(model.stepResults?[0].description, "\\<p>Step description\\</p>")
         XCTAssertEqual(model.stepResults?[0].info, "\\<info>Additional info\\</info>")
         XCTAssertEqual(model.stepResults?[0].parameters, ["\\<param>Parameter 1\\</param>", "Normal parameter"])
+    }
+
+    func testRealApiModel_AutoTestResultsForTestRunModel_DoesNotEscapeAutoTestExternalId() {
+        var model = AutoTestResultsForTestRunModel(
+            configurationId: UUID(),
+            autoTestExternalId: "<test>",
+            outcome: .passed,
+            message: "<b>passed</b>"
+        )
+
+        model.escapeHtmlProperties()
+
+        XCTAssertEqual(model.autoTestExternalId, "<test>")
+        XCTAssertEqual(model.message, "\\<b>passed\\</b>")
     }
     
     func testRealApiModel_TestResultUpdateV2Request_EscapeHtmlProperties() {
