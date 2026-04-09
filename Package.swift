@@ -31,12 +31,12 @@ let package = Package(
                 .product(name: "testit-api-client", package: "api-client-swift"),
                 "AnyCodable"
             ],
+            path: "Sources",
             exclude: [
                 // This file contains `extension String: CodingKey` which conflicts in Swift 6 toolchains.
                 // We provide a local replacement without that conformance.
                 "SyncStorageGenerated/Extensions.swift"
-            ],
-            path: "Sources"
+            ]
         ),
     ]
 )
