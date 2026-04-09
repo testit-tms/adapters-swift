@@ -52,7 +52,7 @@ class TmsApiClient: ApiClient {
         
         // 1. Create Empty Test Run
         let createResponse: TestRunV2ApiResult = try await withCheckedThrowingContinuation { continuation in
-            _ = TestRunsAPI.createEmpty(createEmptyTestRunApiModel: model) { [weak self] data, error in
+            _ = testit_api_client.TestRunsAPI.createEmpty(createEmptyTestRunApiModel: model) { [weak self] data, error in
                 guard let _ = self else {
                     // Self was deallocated, which is unlikely if createTestRun is still executing,
                     // but it's safe to handle.
@@ -77,7 +77,7 @@ class TmsApiClient: ApiClient {
 
         // 2. Start Test Run
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            _ = TestRunsAPI.startTestRun(id: createResponse.id) { [weak self] _, error in
+            _ = testit_api_client.TestRunsAPI.startTestRun(id: createResponse.id) { [weak self] _, error in
                 guard let _ = self else {
                     Self.logger.error("startTestRun callback: self is nil during createTestRun")
                     continuation.resume(throwing: TmsApiClientError.internalError("Self was deallocated during startTestRun callback"))
@@ -112,7 +112,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var testRunResult: TestRunV2ApiResult?
         
-        _ = TestRunsAPI.getTestRunById(id: runUUID) { data, error in
+        _ = testit_api_client.TestRunsAPI.getTestRunById(id: runUUID) { data, error in
             if let error = error {
                 Self.logger.error("Error getting test run: \(error.localizedDescription)")
                 operationError = error
@@ -156,7 +156,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = TestRunsAPI.updateEmpty(updateEmptyTestRunApiModel: updateModel) { _, error in
+        _ = testit_api_client.TestRunsAPI.updateEmpty(updateEmptyTestRunApiModel: updateModel) { _, error in
             if let error = error {
                 Self.logger.error("Error updating test run: \(error.localizedDescription)")
                 operationError = error
@@ -187,7 +187,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = TestRunsAPI.completeTestRun(id: runUUID) { _, error in
+        _ = testit_api_client.TestRunsAPI.completeTestRun(id: runUUID) { _, error in
             if let error = error {
                 Self.logger.error("Error completing test run: \(error.localizedDescription)")
                 operationError = error
@@ -221,7 +221,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var testRunResult: TestRunV2ApiResult?
 
-        _ = TestRunsAPI.getTestRunById(id: runUUID) { data, error in
+        _ = testit_api_client.TestRunsAPI.getTestRunById(id: runUUID) { data, error in
             if let error = error {
                 Self.logger.error("Error getting test run for getTestFromTestRun: \(error.localizedDescription)")
                 operationError = error
@@ -279,7 +279,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = AutoTestsAPI.updateAutoTest(autoTestUpdateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
+        _ = testit_api_client.AutoTestsAPI.updateAutoTest(autoTestUpdateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
             if let error = error {
                 Self.logger.error("Error updating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -311,7 +311,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var createdAutoTestApiResult: AutoTestApiResult? // AutoTestModel?
         
-        _ = AutoTestsAPI.createAutoTest(autoTestCreateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = testit_api_client.AutoTestsAPI.createAutoTest(autoTestCreateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error creating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -368,7 +368,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var searchResults: [AutoTestApiResult]?
 
-        _ = AutoTestsAPI.apiV2AutoTestsSearchPost(skip: nil, take: nil, orderBy: nil, searchField: nil, searchValue: nil, autoTestSearchApiModel: model, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = testit_api_client.AutoTestsAPI.apiV2AutoTestsSearchPost(skip: nil, take: nil, orderBy: nil, searchField: nil, searchValue: nil, autoTestSearchApiModel: model, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error searching autotests: \(error.localizedDescription)")
                 operationError = error
@@ -407,7 +407,7 @@ class TmsApiClient: ApiClient {
                 let attemptSemaphore = DispatchSemaphore(value: 0)
                 var attemptError: Error?
                 
-                _ = AutoTestsAPI.linkAutoTestToWorkItem(id: id, workItemIdApiModel: WorkItemIdApiModel(id: workItemId), apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+                _ = testit_api_client.AutoTestsAPI.linkAutoTestToWorkItem(id: id, workItemIdApiModel: WorkItemIdApiModel(id: workItemId), apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
                     if let error = error {
                         attemptError = error
                     } else {
@@ -452,7 +452,7 @@ class TmsApiClient: ApiClient {
             var attemptError: Error?
             var successFlag = false // Flag to indicate success for the current attempt
 
-            _ = AutoTestsAPI.deleteAutoTestLinkFromWorkItem(id: id, workItemId: workItemId, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+            _ = testit_api_client.AutoTestsAPI.deleteAutoTestLinkFromWorkItem(id: id, workItemId: workItemId, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
                 if let error = error {
                     attemptError = error
                 } else {
@@ -503,7 +503,7 @@ class TmsApiClient: ApiClient {
         var workItemsResult: [AutoTestWorkItemIdentifierApiResult]?
         
         // Using false for isDeleted and isWorkItemDeleted as per the original synchronous call's parameters.
-        _ = AutoTestsAPI.getWorkItemsLinkedToAutoTest(id: id, isDeleted: false, isWorkItemDeleted: false, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = testit_api_client.AutoTestsAPI.getWorkItemsLinkedToAutoTest(id: id, isDeleted: false, isWorkItemDeleted: false, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error retrieving work items linked to test \(id): \(error.localizedDescription)")
                 operationError = error
@@ -558,7 +558,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var resultUUIDsFromApi: [UUID]?
         
-        _ = TestRunsAPI.setAutoTestResultsForTestRun(id: runUUID, autoTestResultsForTestRunModel: escapedModels, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = testit_api_client.TestRunsAPI.setAutoTestResultsForTestRun(id: runUUID, autoTestResultsForTestRunModel: escapedModels, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error sending test results for test run \(testRunUuid): \(error.localizedDescription)")
                 operationError = error
@@ -632,7 +632,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var attachmentModelResponse: AttachmentModel?
         
-        _ = AttachmentsAPI.apiV2AttachmentsPost(file: fileURL, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = testit_api_client.AttachmentsAPI.apiV2AttachmentsPost(file: fileURL, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 print("[TestItAdapter] ERROR uploading attachment: \(error.localizedDescription)")
                 Self.logger.error("Error uploading attachment from path \"\(path)\": \(error.localizedDescription)")
@@ -678,7 +678,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var testResultResponse: TestResultResponse?
         
-        _ = TestResultsAPI.apiV2TestResultsIdGet(id: uuid, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = testit_api_client.TestResultsAPI.apiV2TestResultsIdGet(id: uuid, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error getting test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
@@ -718,7 +718,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = TestResultsAPI.apiV2TestResultsIdPut(id: uuid, testResultUpdateV2Request: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+        _ = testit_api_client.TestResultsAPI.apiV2TestResultsIdPut(id: uuid, testResultUpdateV2Request: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
             if let error = error {
                 Self.logger.error("Error updating test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
