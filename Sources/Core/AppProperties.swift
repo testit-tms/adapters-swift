@@ -16,6 +16,12 @@ enum AppProperties {
     static let AUTOMATIC_UPDATION_LINKS_TO_TEST_CASES = "automaticUpdationLinksToTestCases"
     static let CERT_VALIDATION = "certValidation"
     static let TMS_INTEGRATION = "testIt" // Key for enabling/disabling integration
+    
+    // MARK: - Sync-storage
+    static let SYNC_STORAGE_ENABLED = "syncStorageEnabled"
+    static let SYNC_STORAGE_PORT = "syncStoragePort"
+    static let SYNC_STORAGE_VERSION = "syncStorageVersion"
+    static let SYNC_STORAGE_PATH = "syncStoragePath"
 
     static let PROPERTIES_FILE = "testit.properties"
     static let TMS_CONFIG_FILE_ENV_VAR = "TMS_CONFIG_FILE"
@@ -35,7 +41,11 @@ enum AppProperties {
             ADAPTER_MODE: "TMS_ADAPTER_MODE",
             AUTOMATIC_CREATION_TEST_CASES: "TMS_AUTOMATIC_CREATION_TEST_CASES",
             CERT_VALIDATION: "TMS_CERT_VALIDATION",
-            TMS_INTEGRATION: "TMS_TEST_IT"
+            TMS_INTEGRATION: "TMS_TEST_IT",
+            SYNC_STORAGE_ENABLED: "TMS_SYNC_STORAGE_ENABLED",
+            SYNC_STORAGE_PORT: "TMS_SYNC_STORAGE_PORT",
+            SYNC_STORAGE_VERSION: "TMS_SYNC_STORAGE_VERSION",
+            SYNC_STORAGE_PATH: "TMS_SYNC_STORAGE_PATH"
         ],
         "cli": [
             URL: "tmsUrl",
@@ -47,7 +57,11 @@ enum AppProperties {
             ADAPTER_MODE: "tmsAdapterMode",
             AUTOMATIC_CREATION_TEST_CASES: "tmsAutomaticCreationTestCases",
             CERT_VALIDATION: "tmsCertValidation",
-            TMS_INTEGRATION: "tmsTestIt"
+            TMS_INTEGRATION: "tmsTestIt",
+            SYNC_STORAGE_ENABLED: "syncStorageEnabled",
+            SYNC_STORAGE_PORT: "syncStoragePort",
+            SYNC_STORAGE_VERSION: "syncStorageVersion",
+            SYNC_STORAGE_PATH: "syncStoragePath"
         ]
     ]
 
@@ -196,6 +210,23 @@ enum AppProperties {
                  }
             case TEST_RUN_NAME:
                  result[propKey] = value // No format validation here
+            case SYNC_STORAGE_ENABLED:
+                let lowerValue = value.lowercased()
+                if lowerValue == "true" || lowerValue == "false" {
+                    result[propKey] = lowerValue
+                } else {
+                    logger.warning("Ignoring invalid boolean value found in source for key '\(sourceKey)': \(value)")
+                }
+            case SYNC_STORAGE_PORT:
+                if let port = Int(value), (1...65535).contains(port) {
+                    result[propKey] = value
+                } else {
+                    logger.warning("Ignoring invalid port found in source for key '\(sourceKey)': \(value)")
+                }
+            case SYNC_STORAGE_VERSION:
+                result[propKey] = value
+            case SYNC_STORAGE_PATH:
+                result[propKey] = value
             default:
                 logger.warning("Unknown property key '\(propKey)' in mapping.")
             }
@@ -282,6 +313,18 @@ enum AppProperties {
         validateBooleanProperty(key: AUTOMATIC_UPDATION_LINKS_TO_TEST_CASES, properties: &validatedProperties, default: "false")
         validateBooleanProperty(key: CERT_VALIDATION, properties: &validatedProperties, default: "true")
         validateBooleanProperty(key: TMS_INTEGRATION, properties: &validatedProperties, default: "true")
+        
+        // Sync-storage defaults (do not hard-fail on invalid values)
+        validateBooleanProperty(key: SYNC_STORAGE_ENABLED, properties: &validatedProperties, default: "true")
+        if validatedProperties[SYNC_STORAGE_PORT] == nil {
+            validatedProperties[SYNC_STORAGE_PORT] = "49152"
+        } else if let portStr = validatedProperties[SYNC_STORAGE_PORT], let port = Int(portStr), !(1...65535).contains(port) {
+            logger.warning("Invalid syncStoragePort: \(portStr). Using default value: 49152")
+            validatedProperties[SYNC_STORAGE_PORT] = "49152"
+        }
+        if validatedProperties[SYNC_STORAGE_VERSION] == nil {
+            validatedProperties[SYNC_STORAGE_VERSION] = "v0.1.18"
+        }
         
         // Report errors
         if !errors.isEmpty {

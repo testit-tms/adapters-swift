@@ -67,6 +67,12 @@ class AdapterManager {
          Self.logger.debug("Client configurations: \(String(describing: self.clientConfiguration))") // Adapt if ClientConfiguration isn't CustomStringConvertible
          Self.logger.debug("Adapter configurations: \(self.adapterConfig)") // AdapterConfig is CustomStringConvertible
     }
+    
+    // MARK: - Configuration Snapshots (for integrations)
+    
+    func getClientConfigurationSnapshot() -> ClientConfiguration {
+        return lock.withLock { self.clientConfiguration }
+    }
 
     // MARK: - Test Run Lifecycle
 

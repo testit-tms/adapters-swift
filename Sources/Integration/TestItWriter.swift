@@ -36,6 +36,8 @@ final class TestItWriter {
     let fixtureService: FixtureService
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestItWriter")
+    
+    private var syncStorageRunner: SyncStorageRunner?
 
 
     init() {
@@ -66,6 +68,9 @@ final class TestItWriter {
 
     func onAfterAll() async {
         let rootTestName = "Unknown"
+        syncStorageRunner?.setWorkerStatus("completed")
+        syncStorageRunner?.stop()
+        syncStorageRunner = nil
         await stopContainers(rootTestName: rootTestName)
     }
 
@@ -177,6 +182,22 @@ final class TestItWriter {
         }
         await testService.onTestStart(testCase: testCase, uuid: uuid)
         
+        // Sync-storage: mark test execution in progress and send cut result (master only).
+        // This must never break the main adapter flow.
+        if syncStorageRunner == nil {
+            syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
+        }
+        syncStorageRunner?.setWorkerStatus("in_progress")
+        syncStorageRunner?.resetInProgressFlag()
+        if let runner = syncStorageRunner {
+            let startedOnISO = Self.iso8601UTCFromMillis(Int64(Date().timeIntervalSince1970 * 1000))
+            _ = runner.sendInProgressTestResult(
+                autoTestExternalId: Utils.genExternalID(testName),
+                statusCode: "InProgress",
+                startedOn: startedOnISO
+            )
+        }
+        
         guard let parentId = lastMainContainerId else {
             logger.error("Error: lastMainContainerId is nil in runContainers")
             return
@@ -193,6 +214,12 @@ final class TestItWriter {
 
     private func runContainers(rootTestName: String) async {
         await adapterManager.createTestRunIfNeeded()
+        
+        if syncStorageRunner == nil {
+            syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
+        }
+        syncStorageRunner?.setWorkerStatus("in_progress")
+        
         lastMainContainerId = UUID().uuidString
         guard let parentId = lastMainContainerId else {
             logger.error("Error: lastMainContainerId is nil in runContainers")
@@ -213,5 +240,42 @@ final class TestItWriter {
         if let mainId = lastMainContainerId {
              adapterManager.stopMainContainer(uuid: mainId)
         }
+    }
+    
+    // MARK: - Sync-storage helpers
+    
+    private func createAndStartSyncStorageRunnerIfNeeded() -> SyncStorageRunner? {
+        let cfg = adapterManager.getClientConfigurationSnapshot()
+        guard cfg.syncStorageEnabled else { return nil }
+        let testRunId = cfg.testRunId
+        guard !testRunId.isEmpty, testRunId.lowercased() != "null" else { return nil }
+        
+        do {
+            let runner = try SyncStorageRunner(
+                testRunId: testRunId,
+                port: cfg.syncStoragePort,
+                baseURL: cfg.url,
+                privateToken: cfg.privateToken,
+                version: cfg.syncStorageVersion,
+                syncStoragePath: cfg.syncStoragePath
+            )
+            
+            if runner.start() {
+                return runner
+            }
+            
+            return nil
+        } catch {
+            logger.warning("SyncStorage runner initialization failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    private static func iso8601UTCFromMillis(_ ms: Int64) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(ms) / 1000.0)
+        let formatter = ISO8601DateFormatter()
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date)
     }
 }
