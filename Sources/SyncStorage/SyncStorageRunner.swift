@@ -228,9 +228,9 @@ final class SyncStorageRunner {
         
         isMaster = resp?.isMaster ?? false
         if isMaster {
-            Self.logger.info("SyncStorage master worker registered: \(workerPID, privacy: .public)")
+            Self.logger.info("SyncStorage master worker registered: \(self.workerPID, privacy: .public)")
         } else {
-            Self.logger.info("SyncStorage worker registered: \(workerPID, privacy: .public)")
+            Self.logger.info("SyncStorage worker registered: \(self.workerPID, privacy: .public)")
         }
     }
     
