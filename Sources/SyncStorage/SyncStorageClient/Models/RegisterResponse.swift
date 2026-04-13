@@ -6,10 +6,6 @@
 //
 
 import Foundation
-#if canImport(AnyCodable)
-import AnyCodable
-#endif
-
 public struct RegisterResponse: Codable, JSONEncodable, Hashable {
 
     public var status: String?
