@@ -7,7 +7,6 @@ import os.log
 #if os(macOS) || os(Linux) || os(Windows)
 
 final class SyncStorageRunner {
-    /// Fixed Sync Storage public release used for download URL and binary name.
     private static let syncStorageReleaseVersion = "v0.2.6"
 
     enum SyncStorageRunnerError: LocalizedError {
