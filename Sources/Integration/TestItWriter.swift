@@ -59,7 +59,24 @@ final class TestItWriter {
             isStepContainers: false
         )
 
-        self.syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
+        let cfg = adapterManager.getClientConfigurationSnapshot()
+
+        var runner: SyncStorageRunner?
+        do {
+            runner = try SyncStorageRunner(
+                testRunId: cfg.testRunId,
+                port: cfg.syncStoragePort,
+                baseURL: cfg.url,
+                privateToken: cfg.privateToken,
+                projectId: cfg.projectId,
+                syncStoragePath: cfg.syncStoragePath
+            )
+        } catch {
+            logger.error("SyncStorageRunner init failed: \(error.localizedDescription, privacy: .public)")
+            runner = nil
+        }
+        self.syncStorageRunner = runner
+        _ = self.syncStorageRunner?.start()
         self.syncStorageRunner?.setWorkerStatus("in_progress")
     }
 
@@ -145,12 +162,11 @@ final class TestItWriter {
             }
         }
 
-        if let runner = syncStorageRunner,
-            runner.sendInProgressTestResult(
+        if syncStorageRunner?.sendInProgressTestResult(
                 autoTestExternalId: Utils.genExternalID(testCase.name),
                 statusCode: finalStatus.rawValue,
                 startedOn: self.startedOnISO
-            ) {
+            ) == true {
             finalStatus = .inProgress
         }
 
@@ -232,34 +248,6 @@ final class TestItWriter {
         adapterManager.stopClassContainer(uuid: rootHash)
         if let mainId = lastMainContainerId {
              adapterManager.stopMainContainer(uuid: mainId)
-        }
-    }
-    
-    // MARK: - Sync-storage helpers
-    
-    private func createAndStartSyncStorageRunnerIfNeeded() -> SyncStorageRunner? {
-        let cfg = adapterManager.getClientConfigurationSnapshot()
-        let testRunId = cfg.testRunId
-        guard !testRunId.isEmpty, testRunId.lowercased() != "null" else { return nil }
-        
-        do {
-            let runner = try SyncStorageRunner(
-                testRunId: testRunId,
-                port: cfg.syncStoragePort,
-                baseURL: cfg.url,
-                privateToken: cfg.privateToken,
-                projectId: cfg.projectId,
-                syncStoragePath: cfg.syncStoragePath
-            )
-            
-            if runner.start() {
-                return runner
-            }
-            
-            return nil
-        } catch {
-            logger.warning("SyncStorage runner initialization failed: \(error.localizedDescription)")
-            return nil
         }
     }
     
