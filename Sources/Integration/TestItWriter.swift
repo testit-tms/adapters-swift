@@ -61,7 +61,7 @@ final class TestItWriter {
 
         let cfg = adapterManager.getClientConfigurationSnapshot()
 
-        self.syncStorageRunner = try SyncStorageRunner(
+        self.syncStorageRunner = SyncStorageRunner(
                 testRunId: cfg.testRunId,
                 port: cfg.syncStoragePort,
                 baseURL: cfg.url,
