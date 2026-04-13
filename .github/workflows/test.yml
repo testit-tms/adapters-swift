@@ -83,7 +83,7 @@ jobs:
 
       - name: Test
         run: |
-          export SYNC_STORAGE_VERSION=$(grep -o 'syncStorageReleaseVersion = "[^"]*"' Sources/SyncStorage/SyncStorageRunner.swift | cut -d'"'' -f2)
+          export SYNC_STORAGE_VERSION=$(grep -o 'syncStorageReleaseVersion = "[^"]*"' Sources/SyncStorage/SyncStorageRunner.swift | cut -d'"' -f2)
 
           mkdir -p .caches
           wget -O .caches/syncstorage-linux-amd64 \
