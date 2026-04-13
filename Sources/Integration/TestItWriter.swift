@@ -71,13 +71,13 @@ final class TestItWriter {
                 projectId: cfg.projectId,
                 syncStoragePath: cfg.syncStoragePath
             )
-            runner.start()
-            runner.setWorkerStatus("in_progress")
         } catch {
             logger.error("SyncStorageRunner init failed: \(error.localizedDescription, privacy: .public)")
             runner = nil
         }
         self.syncStorageRunner = runner
+        _ = self.syncStorageRunner?.start()
+        self.syncStorageRunner?.setWorkerStatus("in_progress")
     }
 
     // MARK: - Lifecycle Hooks
@@ -166,7 +166,7 @@ final class TestItWriter {
                 autoTestExternalId: Utils.genExternalID(testCase.name),
                 statusCode: finalStatus.rawValue,
                 startedOn: self.startedOnISO
-            ) {
+            ) == true {
             finalStatus = .inProgress
         }
 
