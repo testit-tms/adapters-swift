@@ -191,10 +191,6 @@ final class SyncStorageRunner {
         return false
     }
     
-    func resetInProgressFlag() {
-        isAlreadyInProgress = false
-    }
-    
     func updateTestRunId(_ testRunId: String) {
         self.testRunId = testRunId
     }
@@ -428,7 +424,6 @@ final class SyncStorageRunner {
     func stop() {}
     func setWorkerStatus(_ status: String) {}
     func sendInProgressTestResult(autoTestExternalId: String, statusCode: String, startedOn: String) -> Bool { return false }
-    func resetInProgressFlag() {}
     func updateTestRunId(_ testRunId: String) {}
     func isMasterWorker() -> Bool { return false }
 }

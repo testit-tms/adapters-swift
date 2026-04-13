@@ -39,6 +39,8 @@ final class TestItWriter {
     
     private var syncStorageRunner: SyncStorageRunner?
 
+    private let startedOnISO: String?
+
 
     init() {
         self.executableTestService = Adapter.getExecutableTestService()
@@ -141,6 +143,15 @@ final class TestItWriter {
             }
         }
 
+        if let runner = syncStorageRunner,
+            runner.sendInProgressTestResult(
+                autoTestExternalId: Utils.genExternalID(testCase.name),
+                statusCode: finalStatus,
+                startedOn: self.startedOnISO
+            ) {
+            finalStatus = .inProgress
+        }
+
         print("[TestItAdapter] Calling stopTestWithResult with status: \(finalStatus), message: \(combinedMessage ?? "nil")")
         await testService.stopTestWithResult(
             testCase: testCase, 
@@ -173,6 +184,7 @@ final class TestItWriter {
     // MARK: - Private Helpers
 
     private func onTestStart(testCase: XCTestCase) async {
+        self.startedOnISO = Self.iso8601UTCFromMillis(Int64(Date().timeIntervalSince1970 * 1000))
         let testName = testCase.name
         executableTestService.refreshUuid(testName: testName)
         executableTestService.setTestStatus(testName: testName)
@@ -181,22 +193,6 @@ final class TestItWriter {
             return
         }
         await testService.onTestStart(testCase: testCase, uuid: uuid)
-        
-        // Sync-storage: mark test execution in progress and send cut result (master only).
-        // This must never break the main adapter flow.
-        if syncStorageRunner == nil {
-            syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
-        }
-        syncStorageRunner?.setWorkerStatus("in_progress")
-        syncStorageRunner?.resetInProgressFlag()
-        if let runner = syncStorageRunner {
-            let startedOnISO = Self.iso8601UTCFromMillis(Int64(Date().timeIntervalSince1970 * 1000))
-            _ = runner.sendInProgressTestResult(
-                autoTestExternalId: Utils.genExternalID(testName),
-                statusCode: "InProgress",
-                startedOn: startedOnISO
-            )
-        }
         
         guard let parentId = lastMainContainerId else {
             logger.error("Error: lastMainContainerId is nil in runContainers")
@@ -217,8 +213,8 @@ final class TestItWriter {
         
         if syncStorageRunner == nil {
             syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
+            syncStorageRunner?.setWorkerStatus("in_progress")
         }
-        syncStorageRunner?.setWorkerStatus("in_progress")
         
         lastMainContainerId = UUID().uuidString
         guard let parentId = lastMainContainerId else {
