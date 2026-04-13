@@ -37,9 +37,9 @@ final class TestItWriter {
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestItWriter")
     
-    private var syncStorageRunner: SyncStorageRunner?
+    private let syncStorageRunner: SyncStorageRunner?
 
-    private let startedOnISO: String?
+    private var startedOnISO: String = ""
 
 
     init() {
@@ -58,6 +58,9 @@ final class TestItWriter {
             testService: testService,
             isStepContainers: false
         )
+
+        self.syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
+        self.syncStorageRunner?.setWorkerStatus("in_progress")
     }
 
     // MARK: - Lifecycle Hooks
@@ -146,7 +149,7 @@ final class TestItWriter {
         if let runner = syncStorageRunner,
             runner.sendInProgressTestResult(
                 autoTestExternalId: Utils.genExternalID(testCase.name),
-                statusCode: finalStatus,
+                statusCode: finalStatus.rawValue,
                 startedOn: self.startedOnISO
             ) {
             finalStatus = .inProgress
@@ -210,11 +213,6 @@ final class TestItWriter {
 
     private func runContainers(rootTestName: String) async {
         await adapterManager.createTestRunIfNeeded()
-        
-        if syncStorageRunner == nil {
-            syncStorageRunner = createAndStartSyncStorageRunnerIfNeeded()
-            syncStorageRunner?.setWorkerStatus("in_progress")
-        }
         
         lastMainContainerId = UUID().uuidString
         guard let parentId = lastMainContainerId else {
