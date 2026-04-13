@@ -71,14 +71,13 @@ final class TestItWriter {
                 projectId: cfg.projectId,
                 syncStoragePath: cfg.syncStoragePath
             )
+            runner.start()
+            runner.setWorkerStatus("in_progress")
         } catch {
             logger.error("SyncStorageRunner init failed: \(error.localizedDescription, privacy: .public)")
             runner = nil
         }
         self.syncStorageRunner = runner
-        if syncStorageRunner?.start() {
-            syncStorageRunner.setWorkerStatus("in_progress")
-        }
     }
 
     // MARK: - Lifecycle Hooks
