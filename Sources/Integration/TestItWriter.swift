@@ -246,7 +246,6 @@ final class TestItWriter {
     
     private func createAndStartSyncStorageRunnerIfNeeded() -> SyncStorageRunner? {
         let cfg = adapterManager.getClientConfigurationSnapshot()
-        guard cfg.syncStorageEnabled else { return nil }
         let testRunId = cfg.testRunId
         guard !testRunId.isEmpty, testRunId.lowercased() != "null" else { return nil }
         
@@ -256,7 +255,6 @@ final class TestItWriter {
                 port: cfg.syncStoragePort,
                 baseURL: cfg.url,
                 privateToken: cfg.privateToken,
-                version: cfg.syncStorageVersion,
                 syncStoragePath: cfg.syncStoragePath
             )
             

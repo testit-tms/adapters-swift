@@ -13,9 +13,7 @@ struct ClientConfiguration: Codable { // Add Codable conformance
     let mode: String
     
     // MARK: - Sync-storage
-    let syncStorageEnabled: Bool
     let syncStoragePort: Int
-    let syncStorageVersion: String
     let syncStoragePath: String?
 
     // Public computed property for token access
@@ -48,10 +46,7 @@ struct ClientConfiguration: Codable { // Add Codable conformance
         self.automaticUpdationLinksToTestCases = (autoUpdateLinksStr.lowercased() == "true")
         
         // MARK: - Sync-storage
-        let syncEnabledStr = (properties[AppProperties.SYNC_STORAGE_ENABLED] ?? "true").lowercased()
-        self.syncStorageEnabled = (syncEnabledStr != "false")
         self.syncStoragePort = Int(properties[AppProperties.SYNC_STORAGE_PORT] ?? "49152") ?? 49152
-        self.syncStorageVersion = properties[AppProperties.SYNC_STORAGE_VERSION] ?? "v0.1.18"
         let syncPath = properties[AppProperties.SYNC_STORAGE_PATH]
         self.syncStoragePath = (syncPath?.isEmpty ?? true) ? nil : syncPath
         
@@ -65,9 +60,8 @@ struct ClientConfiguration: Codable { // Add Codable conformance
                                  "testRunName=\'\(self.testRunName)\', " +
                                  "certValidation=\(self.certValidation), " +
                                  "automaticUpdationLinksToTestCases=\(self.automaticUpdationLinksToTestCases), " +
-                                 "syncStorageEnabled=\(self.syncStorageEnabled), " +
                                  "syncStoragePort=\(self.syncStoragePort), " +
-                                 "syncStorageVersion='\(self.syncStorageVersion)'" +
+                                 "syncStoragePath=\'\(self.syncStoragePath ?? "nil")\', " +
                                  "mode=\(self.mode)" +
                                  ")"
         logger.debug("Initialized ClientConfiguration instance: \(descriptionString)")
@@ -81,7 +75,7 @@ struct ClientConfiguration: Codable { // Add Codable conformance
         // Map public names, use private name for token's backing property
         case privateToken_ = "privateToken"
         case projectId, url, configurationId, testRunId, testRunName, certValidation, automaticUpdationLinksToTestCases, mode
-        case syncStorageEnabled, syncStoragePort, syncStorageVersion, syncStoragePath
+        case syncStoragePort, syncStoragePath
     }
     
     // Custom Encoder if needed to mask token, otherwise default is fine
@@ -100,10 +94,8 @@ extension ClientConfiguration: CustomStringConvertible {
                "testRunName=\'\(testRunName)\', " +
                "certValidation=\(certValidation), " +
                "automaticUpdationLinksToTestCases=\(automaticUpdationLinksToTestCases), " +
-               "syncStorageEnabled=\(syncStorageEnabled), " +
                "syncStoragePort=\(syncStoragePort), " +
-               "syncStorageVersion=\'\(syncStorageVersion)\', " +
-               "syncStoragePath=\'\(syncStoragePath ?? "nil")\'" +
+               "syncStoragePath=\'\(syncStoragePath ?? "nil")\', " +
                "mode=\(self.mode)" +
                ")"
     }

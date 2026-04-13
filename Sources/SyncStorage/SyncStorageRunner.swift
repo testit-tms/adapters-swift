@@ -7,6 +7,9 @@ import os.log
 #if os(macOS) || os(Linux) || os(Windows)
 
 final class SyncStorageRunner {
+    /// Fixed Sync Storage public release used for download URL and binary name.
+    private static let syncStorageReleaseVersion = "v0.2.6"
+
     enum SyncStorageRunnerError: LocalizedError {
         case invalidConfiguration(String)
         case downloadFailed(String)
@@ -35,7 +38,6 @@ final class SyncStorageRunner {
     private let port: Int
     private let baseURL: String
     private let privateToken: String
-    private let version: String
     private let configuredPath: String?
     
     private var testRunId: String
@@ -55,7 +57,7 @@ final class SyncStorageRunner {
     private let startupCheckIntervalSeconds: TimeInterval = 1
     private let postStartupDelaySeconds: TimeInterval = 2
     
-    init(testRunId: String, port: Int, baseURL: String, privateToken: String, version: String, syncStoragePath: String?) throws {
+    init(testRunId: String, port: Int, baseURL: String, privateToken: String, syncStoragePath: String?) throws {
         guard !testRunId.isEmpty, testRunId.lowercased() != "null" else {
             throw SyncStorageRunnerError.invalidConfiguration("testRunId is empty")
         }
@@ -67,7 +69,6 @@ final class SyncStorageRunner {
         self.port = port
         self.baseURL = baseURL
         self.privateToken = privateToken
-        self.version = version
         self.configuredPath = syncStoragePath
         self.workerPID = "worker-\(ProcessInfo.processInfo.processIdentifier)-\(Int64(Date().timeIntervalSince1970 * 1000))"
         
@@ -165,6 +166,7 @@ final class SyncStorageRunner {
         let model = TestResultCutApiModel(
             autoTestExternalId: autoTestExternalId,
             statusCode: statusCode,
+            statusType: String(describing: Converter.mapStatusType(status: statusCode)),
             startedOn: startedOnDate
         )
         
@@ -299,7 +301,7 @@ final class SyncStorageRunner {
             return targetPath
         }
         
-        let downloadURL = "https://github.com/testit-tms/sync-storage-public/releases/download/\(version)/\(fileName)"
+        let downloadURL = "https://github.com/testit-tms/sync-storage-public/releases/download/\(Self.syncStorageReleaseVersion)/\(fileName)"
         try downloadFile(from: downloadURL, to: targetPath)
         setExecutableBitIfNeeded(path: targetPath)
         return targetPath
@@ -325,7 +327,7 @@ final class SyncStorageRunner {
         throw SyncStorageRunnerError.unsupportedPlatform("unsupported architecture")
         #endif
         
-        var name = "syncstorage-\(version)-\(osPart)_\(archPart)"
+        var name = "syncstorage-\(Self.syncStorageReleaseVersion)-\(osPart)_\(archPart)"
         #if os(Windows)
         name += ".exe"
         #endif
@@ -419,7 +421,7 @@ fileprivate extension Process {
 // On platforms where launching a subprocess is not supported, provide a stub implementation
 // that disables sync-storage without affecting the main adapter flow.
 final class SyncStorageRunner {
-    init(testRunId: String, port: Int, baseURL: String, privateToken: String, version: String, syncStoragePath: String?) throws {}
+    init(testRunId: String, port: Int, baseURL: String, privateToken: String, syncStoragePath: String?) throws {}
     func start() -> Bool { return false }
     func stop() {}
     func setWorkerStatus(_ status: String) {}

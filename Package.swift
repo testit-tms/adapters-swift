@@ -35,7 +35,7 @@ let package = Package(
             exclude: [
                 // This file contains `extension String: CodingKey` which conflicts in Swift 6 toolchains.
                 // We provide a local replacement without that conformance.
-                "SyncStorageGenerated/Extensions.swift"
+                "SyncStorage/SyncStorageClient/Extensions.swift"
             ]
         ),
     ]
