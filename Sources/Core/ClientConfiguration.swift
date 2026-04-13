@@ -11,6 +11,10 @@ struct ClientConfiguration: Codable { // Add Codable conformance
     let certValidation: Bool
     var automaticUpdationLinksToTestCases: Bool
     let mode: String
+    
+    // MARK: - Sync-storage
+    let syncStoragePort: Int
+    let syncStoragePath: String?
 
     // Public computed property for token access
     var privateToken: String {
@@ -41,6 +45,11 @@ struct ClientConfiguration: Codable { // Add Codable conformance
         let autoUpdateLinksStr = properties[AppProperties.AUTOMATIC_UPDATION_LINKS_TO_TEST_CASES] ?? "false" // Default to "false" if null
         self.automaticUpdationLinksToTestCases = (autoUpdateLinksStr.lowercased() == "true")
         
+        // MARK: - Sync-storage
+        self.syncStoragePort = Int(properties[AppProperties.SYNC_STORAGE_PORT] ?? "49152") ?? 49152
+        let syncPath = properties[AppProperties.SYNC_STORAGE_PATH]
+        self.syncStoragePath = (syncPath?.isEmpty ?? true) ? nil : syncPath
+        
         // Construct description manually to avoid capturing mutating self in logger's closure
         let descriptionString = "ClientConfiguration(" +
                                  "url='\(self.url)\', " +
@@ -50,7 +59,9 @@ struct ClientConfiguration: Codable { // Add Codable conformance
                                  "testRunId=\'\(self.testRunId)\', " +
                                  "testRunName=\'\(self.testRunName)\', " +
                                  "certValidation=\(self.certValidation), " +
-                                 "automaticUpdationLinksToTestCases=\(self.automaticUpdationLinksToTestCases)" +
+                                 "automaticUpdationLinksToTestCases=\(self.automaticUpdationLinksToTestCases), " +
+                                 "syncStoragePort=\(self.syncStoragePort), " +
+                                 "syncStoragePath=\'\(self.syncStoragePath ?? "nil")\', " +
                                  "mode=\(self.mode)" +
                                  ")"
         logger.debug("Initialized ClientConfiguration instance: \(descriptionString)")
@@ -64,6 +75,7 @@ struct ClientConfiguration: Codable { // Add Codable conformance
         // Map public names, use private name for token's backing property
         case privateToken_ = "privateToken"
         case projectId, url, configurationId, testRunId, testRunName, certValidation, automaticUpdationLinksToTestCases, mode
+        case syncStoragePort, syncStoragePath
     }
     
     // Custom Encoder if needed to mask token, otherwise default is fine
@@ -81,7 +93,9 @@ extension ClientConfiguration: CustomStringConvertible {
                "testRunId=\'\(testRunId)\', " +
                "testRunName=\'\(testRunName)\', " +
                "certValidation=\(certValidation), " +
-               "automaticUpdationLinksToTestCases=\(automaticUpdationLinksToTestCases)" +
+               "automaticUpdationLinksToTestCases=\(automaticUpdationLinksToTestCases), " +
+               "syncStoragePort=\(syncStoragePort), " +
+               "syncStoragePath=\'\(syncStoragePath ?? "nil")\', " +
                "mode=\(self.mode)" +
                ")"
     }
