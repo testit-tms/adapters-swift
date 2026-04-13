@@ -37,7 +37,7 @@ final class TestItWriter {
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "TestItWriter")
     
-    private let syncStorageRunner: SyncStorageRunner
+    private let syncStorageRunner: SyncStorageRunner?
 
     private var startedOnISO: String = ""
 
@@ -61,7 +61,9 @@ final class TestItWriter {
 
         let cfg = adapterManager.getClientConfigurationSnapshot()
 
-        self.syncStorageRunner = SyncStorageRunner(
+        var runner: SyncStorageRunner?
+        do {
+            runner = try SyncStorageRunner(
                 testRunId: cfg.testRunId,
                 port: cfg.syncStoragePort,
                 baseURL: cfg.url,
@@ -69,8 +71,14 @@ final class TestItWriter {
                 projectId: cfg.projectId,
                 syncStoragePath: cfg.syncStoragePath
             )
-        self.syncStorageRunner.start()
-        self.syncStorageRunner.setWorkerStatus("in_progress")
+        } catch {
+            logger.error("SyncStorageRunner init failed: \(error.localizedDescription, privacy: .public)")
+            runner = nil
+        }
+        self.syncStorageRunner = runner
+        if syncStorageRunner?.start() {
+            syncStorageRunner.setWorkerStatus("in_progress")
+        }
     }
 
     // MARK: - Lifecycle Hooks
@@ -83,8 +91,8 @@ final class TestItWriter {
 
     func onAfterAll() async {
         let rootTestName = "Unknown"
-        syncStorageRunner.setWorkerStatus("completed")
-        syncStorageRunner.stop()
+        syncStorageRunner?.setWorkerStatus("completed")
+        syncStorageRunner?.stop()
         await stopContainers(rootTestName: rootTestName)
     }
 
@@ -155,7 +163,7 @@ final class TestItWriter {
             }
         }
 
-        if syncStorageRunner.sendInProgressTestResult(
+        if syncStorageRunner?.sendInProgressTestResult(
                 autoTestExternalId: Utils.genExternalID(testCase.name),
                 statusCode: finalStatus.rawValue,
                 startedOn: self.startedOnISO
