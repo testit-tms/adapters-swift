@@ -7,7 +7,7 @@ import os.log
 #if os(macOS) || os(Linux) || os(Windows)
 
 final class SyncStorageRunner {
-    private static let syncStorageReleaseVersion = "v0.2.6"
+    private static let syncStorageReleaseVersion = "v0.2.10"
 
     enum SyncStorageRunnerError: LocalizedError {
         case invalidConfiguration(String)
@@ -37,6 +37,7 @@ final class SyncStorageRunner {
     private let port: Int
     private let baseURL: String
     private let privateToken: String
+    private let projectId: String
     private let configuredPath: String?
     
     private var testRunId: String
@@ -56,7 +57,7 @@ final class SyncStorageRunner {
     private let startupCheckIntervalSeconds: TimeInterval = 1
     private let postStartupDelaySeconds: TimeInterval = 2
     
-    init(testRunId: String, port: Int, baseURL: String, privateToken: String, syncStoragePath: String?) throws {
+    init(testRunId: String, port: Int, baseURL: String, privateToken: String, projectId: String, syncStoragePath: String?) throws {
         guard !testRunId.isEmpty, testRunId.lowercased() != "null" else {
             throw SyncStorageRunnerError.invalidConfiguration("testRunId is empty")
         }
@@ -68,6 +69,7 @@ final class SyncStorageRunner {
         self.port = port
         self.baseURL = baseURL
         self.privateToken = privateToken
+        self.projectId = projectId
         self.configuredPath = syncStoragePath
         self.workerPID = "worker-\(ProcessInfo.processInfo.processIdentifier)-\(Int64(Date().timeIntervalSince1970 * 1000))"
         
@@ -163,6 +165,7 @@ final class SyncStorageRunner {
         
         let startedOnDate = OpenISO8601DateFormatter().date(from: startedOn)
         let model = TestResultCutApiModel(
+            projectId: projectId,
             autoTestExternalId: autoTestExternalId,
             statusCode: statusCode,
             statusType: String(describing: Converter.mapStatusType(status: statusCode)),
@@ -420,7 +423,7 @@ fileprivate extension Process {
 // On platforms where launching a subprocess is not supported, provide a stub implementation
 // that disables sync-storage without affecting the main adapter flow.
 final class SyncStorageRunner {
-    init(testRunId: String, port: Int, baseURL: String, privateToken: String, syncStoragePath: String?) throws {}
+    init(testRunId: String, port: Int, baseURL: String, privateToken: String, projectId: String, syncStoragePath: String?) throws {}
     func start() -> Bool { return false }
     func stop() {}
     func setWorkerStatus(_ status: String) {}

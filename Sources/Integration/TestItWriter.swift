@@ -255,6 +255,7 @@ final class TestItWriter {
                 port: cfg.syncStoragePort,
                 baseURL: cfg.url,
                 privateToken: cfg.privateToken,
+                projectId: cfg.projectId,
                 syncStoragePath: cfg.syncStoragePath
             )
             
