@@ -75,7 +75,6 @@ final class TestItWriter {
         let rootTestName = "Unknown"
         syncStorageRunner?.setWorkerStatus("completed")
         syncStorageRunner?.stop()
-        syncStorageRunner = nil
         await stopContainers(rootTestName: rootTestName)
     }
 
