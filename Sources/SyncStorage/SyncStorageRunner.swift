@@ -7,7 +7,7 @@ import os.log
 #if os(macOS) || os(Linux) || os(Windows)
 
 final class SyncStorageRunner {
-    private static let syncStorageReleaseVersion = "v0.2.10"
+    private static let syncStorageReleaseVersion = "v0.2.12"
 
     enum SyncStorageRunnerError: LocalizedError {
         case invalidConfiguration(String)
@@ -163,13 +163,11 @@ final class SyncStorageRunner {
         guard isMaster else { return false }
         guard !isAlreadyInProgress else { return false }
         
-        let startedOnDate = OpenISO8601DateFormatter().date(from: startedOn)
         let model = TestResultCutApiModel(
             projectId: projectId,
             autoTestExternalId: autoTestExternalId,
             statusCode: statusCode,
             statusType: String(describing: Converter.mapStatusType(status: statusCode)),
-            startedOn: startedOnDate
         )
         
         let ok = waitBool { done in
