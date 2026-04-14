@@ -169,7 +169,7 @@ class AdapterManager {
             let testRun = try self.client.getTestRun(uuid: testRunId)
 
             if testRun.stateName != .completed {
-                try self.client.completeTestRun(uuid: testRunId)
+                // try self.client.completeTestRun(uuid: testRunId)
                 Self.logger.info("Completed test run: \(testRunId)")
             } else {
                  Self.logger.info("Test run \(testRunId) already completed.")
