@@ -50,7 +50,7 @@ final class TestService {
 
    
 
-    func stopTestWithResult(testCase: XCTestCase, status: ItemStatus, message: String?, trace: String?) async {
+    func stopTestWithResult(testCase: XCTestCase, status: ItemStatus, originalStatus: ItemStatus, message: String?, trace: String?) async {
         print("[TestItAdapter] TestService.stopTestWithResult called for: \(testCase.name) with status: \(status)")
         Self.logger.debug("TestService.stopTestWithResult called for test: \(testCase.name) with status: \(String(describing: status))")
         
@@ -72,15 +72,9 @@ final class TestService {
             Self.logger.debug("Test successful: \(testCase.name)")
         case .failed:
             finalItemStatus = .failed
-            if let msg = message {
-                errorForThrowable = NSError(domain: "XCTestError", code: 1, userInfo: [NSLocalizedDescriptionKey: msg, "trace": trace ?? "No trace available"])
-            }
             Self.logger.debug("Test failed: \(testCase.name) - Message: \(message ?? "N/A")")
         case .skipped:
             finalItemStatus = .skipped
-            if let msg = message {
-                errorForThrowable = NSError(domain: "XCTestSkipped", code: 0, userInfo: [NSLocalizedDescriptionKey: msg])
-            }
             Self.logger.debug("Test skipped: \(testCase.name) - Message: \(message ?? "N/A")")
         case .inProgress:
             finalItemStatus = .inProgress
@@ -89,7 +83,19 @@ final class TestService {
             Self.logger.debug("Blocked")
         }
 
-        
+        switch originalStatus {
+        case .failed:
+            if let msg = message {
+                errorForThrowable = NSError(domain: "XCTestError", code: 1, userInfo: [NSLocalizedDescriptionKey: msg, "trace": trace ?? "No trace available"])
+            }
+            Self.logger.debug("Test failed: \(testCase.name) - Message: \(message ?? "N/A")")
+        case .skipped:
+            if let msg = message {
+                errorForThrowable = NSError(domain: "XCTestSkipped", code: 0, userInfo: [NSLocalizedDescriptionKey: msg])
+            }
+            Self.logger.debug("Test skipped: \(testCase.name) - Message: \(message ?? "N/A")")
+        }
+
         let context = TestItContextBuilder.getContext(forKey: testCase.name)
         if let context = context {
             // Self.logger.info("TestItContext: \(context)")

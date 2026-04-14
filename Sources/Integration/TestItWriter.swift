@@ -116,6 +116,7 @@ final class TestItWriter {
         // If testRun == nil (for example, the test did not start), we consider succeeded = true (did not fail).
 
         var finalStatus: ItemStatus
+        var originalStatus: ItemStatus
         var combinedMessage: String? = nil
         var combinedTrace: String? = nil
 
@@ -127,6 +128,7 @@ final class TestItWriter {
 
         if !succeeded || hasCriticalBodyIssues {
             finalStatus = .failed
+            originalStatus = .failed
 
             var messagesArray: [String] = []
             var tracesArray: [String] = []
@@ -152,6 +154,7 @@ final class TestItWriter {
             combinedTrace = tracesArray.joined(separator: "\n---\n")
         } else {
             finalStatus = .passed
+            originalStatus = .passed
         }
 
         // fixtureIssues can be used for additional logging here if needed
@@ -173,7 +176,8 @@ final class TestItWriter {
         print("[TestItAdapter] Calling stopTestWithResult with status: \(finalStatus), message: \(combinedMessage ?? "nil")")
         await testService.stopTestWithResult(
             testCase: testCase, 
-            status: finalStatus, 
+            status: finalStatus,
+            originalStatus: originalStatus,
             message: combinedMessage, 
             trace: combinedTrace
         )
