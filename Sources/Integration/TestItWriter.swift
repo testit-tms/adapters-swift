@@ -90,9 +90,9 @@ final class TestItWriter {
 
     func onAfterAll() async {
         let rootTestName = "Unknown"
+        await stopContainers(rootTestName: rootTestName)
         syncStorageRunner?.setWorkerStatus("completed")
         syncStorageRunner?.stop()
-        await stopContainers(rootTestName: rootTestName)
     }
 
     func recordFixtureFailure(for testCase: XCTestCase, issue: XCTIssue, fixtureContext: String) async {
