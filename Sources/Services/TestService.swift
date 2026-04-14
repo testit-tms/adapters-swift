@@ -83,6 +83,7 @@ final class TestService {
             }
             Self.logger.debug("Test skipped: \(testCase.name) - Message: \(message ?? "N/A")")
         case .inProgress:
+            finalItemStatus = .inProgress
             Self.logger.debug("In progress")
         case .blocked:
             Self.logger.debug("Blocked")
