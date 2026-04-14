@@ -94,6 +94,8 @@ final class TestService {
                 errorForThrowable = NSError(domain: "XCTestSkipped", code: 0, userInfo: [NSLocalizedDescriptionKey: msg])
             }
             Self.logger.debug("Test skipped: \(testCase.name) - Message: \(message ?? "N/A")")
+        default:
+            Self.logger.debug("Test not failed and not skipped: \(testCase.name) - Message: N/A")
         }
 
         let context = TestItContextBuilder.getContext(forKey: testCase.name)
