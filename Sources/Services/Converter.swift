@@ -5,6 +5,15 @@ import os.log
 enum Converter {
 
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "Converter")
+    private static let defaultLinkType: testit_api_client.LinkType = .related
+
+    private static func toApiLinkType(from rawValue: String) -> testit_api_client.LinkType {
+        guard let linkType = testit_api_client.LinkType(rawValue: rawValue) else {
+            logger.warning("Warning: Could not convert LinkType rawValue: \(rawValue). Fallback to Related.")
+            return defaultLinkType
+        }
+        return linkType
+    }
 
     static func testResultToAutoTestCreateApiModel(result: TestResultCommon, projectId: UUID?) -> AutoTestCreateApiModel? {
 
@@ -278,15 +287,11 @@ enum Converter {
     
     static func convertPostLinksToPostModel(_ links: [LinkItem]) -> [LinkPostModel] {
             return links.compactMap { link -> LinkPostModel? in
-                guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
-                    logger.warning("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
-                    return nil
-                }
                 return LinkPostModel(
                     title: link.title,
                     url: link.url,
                     description: link.description,
-                    type: linkType,
+                    type: toApiLinkType(from: link.type.rawValue),
                     hasInfo: false
                 )
             }
@@ -294,16 +299,11 @@ enum Converter {
 
     static func convertPostLinks(_ links: [LinkItem]) -> [LinkCreateApiModel] {
         return links.compactMap { link -> LinkCreateApiModel? in
-            // Safely create LinkType from rawValue
-            guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
-                logger.warning("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
-                return nil
-            }
             return LinkCreateApiModel(
                 title: link.title,
                 url: link.url, // url is non-optional in LinkCreateApiModel and LinkItem
                 description: link.description,
-                type: Optional(linkType), // Explicitly convert non-optional LinkType to LinkType?
+                type: Optional(toApiLinkType(from: link.type.rawValue)),
                 hasInfo: false // Kept as true, as per previous logic and new non-optional requirement
             )
         }
@@ -311,16 +311,12 @@ enum Converter {
 
     static func convertPutLinks(_ links: [LinkItem]) -> [LinkUpdateApiModel] {
         return links.compactMap { link -> LinkUpdateApiModel? in
-            guard let linkType = testit_api_client.LinkType(rawValue: link.type.rawValue) else {
-                logger.warning("Warning: Could not convert LinkType rawValue: \(link.type.rawValue)")
-                return nil
-            }
             return LinkUpdateApiModel(
                 id: nil, // New field, LinkItem doesn't have a direct ID to map here
                 title: link.title,
                 url: link.url,
                 description: link.description,
-                type: linkType,
+                type: toApiLinkType(from: link.type.rawValue),
                 hasInfo: false // Assuming true, as per existing logic and model requiring it
             )
         }
@@ -518,14 +514,6 @@ enum Converter {
     private static func convertLinkApiResultsToPutLinks(_ links: [LinkApiResult]) -> [LinkPutModel] {
         // No need to check for null as the input type is non-optional array
         return links.compactMap { link -> LinkPutModel? in
-            // link.type is testit_api_client.LinkType? as per linter error.
-            // LinkPutModel expects a non-optional testit_api_client.LinkType for its 'type' parameter.
-            // So, we just need to unwrap link.type.
-            guard let linkType = link.type else {
-                logger.warning("Warning: LinkApiResult.type is nil. LinkPutModel requires a non-optional LinkType.")
-                return nil
-            }
-
             // link.url is now assumed non-optional based on linter error, so direct assignment is used.
             // The guard for link.url has been removed.
 
@@ -534,7 +522,7 @@ enum Converter {
                 title: link.title,
                 url: link.url, // Use link.url directly
                 description: link.description,
-                type: linkType,
+                type: link.type ?? defaultLinkType,
                 hasInfo: true // Assuming true, as per model requiring it and previous similar conversions
             )
         }
@@ -566,7 +554,7 @@ enum Converter {
                 title: link.title,
                 url: link.url,
                 description: link.description,
-                type: link.type,
+                type: link.type ?? defaultLinkType,
                 hasInfo: false
             )
         }

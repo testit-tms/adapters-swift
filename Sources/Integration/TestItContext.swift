@@ -124,9 +124,7 @@ public struct LinkEntity {
 
 extension LinkEntity {
     func toLinkItem() -> LinkItem {
-        guard let linkType = LinkType(rawValue: self.type.rawValue) else {
-            fatalError("Failed to convert LinkEntityType to LinkType")
-        }
+        let linkType = LinkType(rawValue: self.type.rawValue) ?? .related
 
         return LinkItem(title: self.title, url: self.url,
                         description: self.description, type: linkType)
