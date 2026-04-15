@@ -7,7 +7,7 @@ import os.log
 #if os(macOS) || os(Linux) || os(Windows)
 
 final class SyncStorageRunner {
-    private static let syncStorageReleaseVersion = "v0.2.12"
+    private static let syncStorageReleaseVersion = "v0.3.0"
 
     enum SyncStorageRunnerError: LocalizedError {
         case invalidConfiguration(String)
