@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.5.0
+#VERSION=1.0.2
 API_CLIENT_VERSION=0.5.0
 
 # Update testit-api-client version in Package.swift using sed
