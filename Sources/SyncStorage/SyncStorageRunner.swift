@@ -7,7 +7,7 @@ import os.log
 #if os(macOS) || os(Linux) || os(Windows)
 
 final class SyncStorageRunner {
-    private static let syncStorageReleaseVersion = "v0.3.0"
+    private static let syncStorageReleaseVersion = "v0.3.2"
 
     enum SyncStorageRunnerError: LocalizedError {
         case invalidConfiguration(String)
@@ -108,7 +108,7 @@ final class SyncStorageRunner {
             self.outputPipe = pipe
             
             try process.run()
-            readOutputAsync(from: pipe)
+            //readOutputAsync(from: pipe)
             
             guard waitForStartup() else {
                 Self.logger.error("SyncStorage failed to start within timeout")
