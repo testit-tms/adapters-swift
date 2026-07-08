@@ -95,7 +95,7 @@ enum Converter {
             failureClassIds: result.failureClassIds,
             statusCode: result.status?.code,
             comment: result.comment,
-            links: result.links,
+            links: convertLinkApiResultsToCreateLinks(result.links),
             stepResults: result.stepResults,
             attachments: convertAttachmentsFromResult(result.attachments ?? []),
             duration: result.durationInMs, // Mapping old durationInMs to new duration field.
@@ -303,7 +303,7 @@ enum Converter {
                 title: link.title,
                 url: link.url, // url is non-optional in LinkCreateApiModel and LinkItem
                 description: link.description,
-                type: Optional(toApiLinkType(from: link.type.rawValue)),
+                type: toApiLinkType(from: link.type.rawValue),
                 hasInfo: false // Kept as true, as per previous logic and new non-optional requirement
             )
         }
@@ -511,6 +511,19 @@ enum Converter {
         }
     }
 
+    private static func convertLinkApiResultsToCreateLinks(_ links: [LinkApiResult]?) -> [CreateLinkApiModel]? {
+        guard let links = links else { return nil }
+        return links.map { link in
+            CreateLinkApiModel(
+                title: link.title,
+                url: link.url,
+                description: link.description,
+                type: link.type,
+                hasInfo: link.hasInfo
+            )
+        }
+    }
+
     private static func convertLinkApiResultsToPutLinks(_ links: [LinkApiResult]) -> [LinkPutModel] {
         // No need to check for null as the input type is non-optional array
         return links.compactMap { link -> LinkPutModel? in
@@ -522,7 +535,7 @@ enum Converter {
                 title: link.title,
                 url: link.url, // Use link.url directly
                 description: link.description,
-                type: link.type ?? defaultLinkType,
+                type: link.type,
                 hasInfo: true // Assuming true, as per model requiring it and previous similar conversions
             )
         }
@@ -554,7 +567,7 @@ enum Converter {
                 title: link.title,
                 url: link.url,
                 description: link.description,
-                type: link.type ?? defaultLinkType,
+                type: link.type,
                 hasInfo: false
             )
         }
