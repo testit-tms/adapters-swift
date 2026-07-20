@@ -1,6 +1,6 @@
 import Foundation
 import os.log
-import testit_api_client
+import AdaptersApi
 
 // Updated TmsApiClient implementation based on Kotlin code
 class TmsApiClient: ApiClient {
@@ -30,17 +30,16 @@ class TmsApiClient: ApiClient {
 
         // Use the validated URL
         let baseUrl = configuration.url
-        TestitApiClientAPI.basePath = baseUrl
-        TestitApiClientAPI.customHeaders["Authorization"] = TmsApiClient.AUTH_PREFIX + " " + self.clientConfiguration.privateToken
-        TestitApiClientAPI.apiResponseQueue = DispatchQueue.global(qos: .background)
-        // TestitApiClientAPI.requiresAuthentication = self.clientConfiguration.certValidation
+        AdaptersApiAPI.basePath = baseUrl
+        AdaptersApiAPI.customHeaders["Authorization"] = TmsApiClient.AUTH_PREFIX + " " + self.clientConfiguration.privateToken
+        AdaptersApiAPI.apiResponseQueue = DispatchQueue.global(qos: .background)
         
         Self.logger.debug("TmsApiClient initialized.")
     }
 
     // MARK: - ApiClient Protocol Implementation
 
-    func createTestRun() async throws -> TestRunV2ApiResult {
+    func createTestRun() async throws -> TestRunApiResult {
         Self.logger.debug("TmsApiClient: createTestRun...")
         guard let projectId = UUID(uuidString: clientConfiguration.projectId) else {
             Self.logger.error("Cannot create test run: Invalid Project ID format \"\(self.clientConfiguration.projectId)\"")
@@ -51,24 +50,22 @@ class TmsApiClient: ApiClient {
         Self.logger.debug("Creating new test run: \(String(describing: model))")
         
         // 1. Create Empty Test Run
-        let createResponse: TestRunV2ApiResult = try await withCheckedThrowingContinuation { continuation in
-            _ = testit_api_client.TestRunsAPI.createEmpty(createEmptyTestRunApiModel: model) { [weak self] data, error in
+        let createResponse: TestRunApiResult = try await withCheckedThrowingContinuation { continuation in
+            _ = TestRunsAPI.adaptersTestRunsPost(createEmptyTestRunApiModel: model) { [weak self] data, error in
                 guard let _ = self else {
-                    // Self was deallocated, which is unlikely if createTestRun is still executing,
-                    // but it's safe to handle.
-                    Self.logger.error("createEmpty callback: self is nil during createTestRun")
-                    continuation.resume(throwing: TmsApiClientError.internalError("Self was deallocated during createEmpty callback"))
+                    Self.logger.error("adaptersTestRunsPost callback: self is nil during createTestRun")
+                    continuation.resume(throwing: TmsApiClientError.internalError("Self was deallocated during adaptersTestRunsPost callback"))
                     return
                 }
                 
                 if let error = error {
-                    Self.logger.error("Error response from createEmpty: \(error.localizedDescription)")
+                    Self.logger.error("Error response from adaptersTestRunsPost: \(error.localizedDescription)")
                     continuation.resume(throwing: error)
                 } else if let data = data {
                     continuation.resume(returning: data)
                 } else {
-                    Self.logger.error("createEmpty returned no data and no error.")
-                    continuation.resume(throwing: TmsApiClientError.missingApiResponseData("createEmpty returned no data and no error"))
+                    Self.logger.error("adaptersTestRunsPost returned no data and no error.")
+                    continuation.resume(throwing: TmsApiClientError.missingApiResponseData("adaptersTestRunsPost returned no data and no error"))
                 }
             }
         }
@@ -77,10 +74,10 @@ class TmsApiClient: ApiClient {
 
         // 2. Start Test Run
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            _ = testit_api_client.TestRunsAPI.startTestRun(id: createResponse.id) { [weak self] _, error in
+            _ = TestRunsAPI.adaptersTestRunsIdStartPost(id: createResponse.id) { [weak self] _, error in
                 guard let _ = self else {
-                    Self.logger.error("startTestRun callback: self is nil during createTestRun")
-                    continuation.resume(throwing: TmsApiClientError.internalError("Self was deallocated during startTestRun callback"))
+                    Self.logger.error("adaptersTestRunsIdStartPost callback: self is nil during createTestRun")
+                    continuation.resume(throwing: TmsApiClientError.internalError("Self was deallocated during adaptersTestRunsIdStartPost callback"))
                     return
                 }
                 
@@ -88,7 +85,6 @@ class TmsApiClient: ApiClient {
                     Self.logger.error("Error starting test run: \(error.localizedDescription)")
                     continuation.resume(throwing: error)
                 } else {
-                    // Successful start, returning Void
                     continuation.resume(returning: ())
                 }
             }
@@ -98,7 +94,7 @@ class TmsApiClient: ApiClient {
         return createResponse
     }
 
-    func getTestRun(uuid: String) throws -> TestRunV2ApiResult {
+    func getTestRun(uuid: String) throws -> TestRunApiResult {
         Self.logger.debug("TmsApiClient: getTestRun...")
         lock.lock()
         defer { lock.unlock() }
@@ -110,17 +106,17 @@ class TmsApiClient: ApiClient {
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
-        var testRunResult: TestRunV2ApiResult?
+        var testRunResult: TestRunApiResult?
         
-        _ = testit_api_client.TestRunsAPI.getTestRunById(id: runUUID) { data, error in
+        _ = TestRunsAPI.adaptersTestRunsIdGet(id: runUUID) { data, error in
             if let error = error {
                 Self.logger.error("Error getting test run: \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
                 testRunResult = data
             } else {
-                Self.logger.error("getTestRunById returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("getTestRunById returned no data and no error")
+                Self.logger.error("adaptersTestRunsIdGet returned no data and no error.")
+                operationError = TmsApiClientError.missingApiResponseData("adaptersTestRunsIdGet returned no data and no error")
             }
             semaphore.signal()
         }
@@ -133,8 +129,8 @@ class TmsApiClient: ApiClient {
         }
         
         guard let result = testRunResult else {
-            Self.logger.error("getTestRunById response was nil after operation")
-            throw TmsApiClientError.missingApiResponseData("getTestRunById response was nil after operation")
+            Self.logger.error("adaptersTestRunsIdGet response was nil after operation")
+            throw TmsApiClientError.missingApiResponseData("adaptersTestRunsIdGet response was nil after operation")
         }
         
         return result
@@ -156,7 +152,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = testit_api_client.TestRunsAPI.updateEmpty(updateEmptyTestRunApiModel: updateModel) { _, error in
+        _ = TestRunsAPI.adaptersTestRunsPut(updateEmptyTestRunApiModel: updateModel) { _, error in
             if let error = error {
                 Self.logger.error("Error updating test run: \(error.localizedDescription)")
                 operationError = error
@@ -187,7 +183,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = testit_api_client.TestRunsAPI.completeTestRun(id: runUUID) { _, error in
+        _ = TestRunsAPI.adaptersTestRunsIdCompletePost(id: runUUID) { _, error in
             if let error = error {
                 Self.logger.error("Error completing test run: \(error.localizedDescription)")
                 operationError = error
@@ -217,19 +213,29 @@ class TmsApiClient: ApiClient {
             throw TmsApiClientError.invalidUUIDFormat("Invalid Configuration ID format")
         }
         
+        let filter = TestResultsFilterApiModel(
+            configurationIds: [configUUID],
+            testRunIds: [runUUID]
+        )
+        
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
-        var testRunResult: TestRunV2ApiResult?
+        var searchResults: [TestResultShortResponse]?
 
-        _ = testit_api_client.TestRunsAPI.getTestRunById(id: runUUID) { data, error in
+        _ = TestResultsAPI.adaptersTestResultsSearchPost(
+            skip: nil,
+            take: nil,
+            orderBy: nil,
+            searchField: nil,
+            searchValue: nil,
+            testResultsFilterApiModel: filter,
+            apiResponseQueue: AdaptersApiAPI.apiResponseQueue
+        ) { data, error in
             if let error = error {
-                Self.logger.error("Error getting test run for getTestFromTestRun: \(error.localizedDescription)")
+                Self.logger.error("Error searching test results for getTestFromTestRun: \(error.localizedDescription)")
                 operationError = error
-            } else if let data = data {
-                testRunResult = data
             } else {
-                Self.logger.error("getTestRunById (for getTestFromTestRun) returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("getTestRunById (for getTestFromTestRun) returned no data and no error")
+                searchResults = data ?? []
             }
             semaphore.signal()
         }
@@ -237,23 +243,15 @@ class TmsApiClient: ApiClient {
         semaphore.wait()
         
         if let error = operationError {
-            Self.logger.error("Failed to get test run for getTestFromTestRun: \(error.localizedDescription)")
+            Self.logger.error("Failed to search test results for getTestFromTestRun: \(error.localizedDescription)")
             throw error
         }
         
-        guard let model = testRunResult else {
-            Self.logger.error("getTestRunById (for getTestFromTestRun) response was nil after operation")
-            throw TmsApiClientError.missingApiResponseData("getTestRunById (for getTestFromTestRun) response was nil after operation")
-        }
-
-        guard let testResults = model.testResults, !testResults.isEmpty else {
+        guard let results = searchResults, !results.isEmpty else {
             return []
         }
         
-        // Assuming TestResultV2ShortModel has configurationId and autoTest?.externalId
-        // Need to add these properties to the stub if not present
-        return testResults.filter { $0.configurationId == configUUID }
-                          .compactMap { $0.autoTest?.externalId }
+        return results.compactMap { $0.autotestExternalId }
     }
 
     func updateAutoTest(model: AutoTestUpdateApiModel) throws {
@@ -271,7 +269,6 @@ class TmsApiClient: ApiClient {
         Self.logger.debug("AutoTestUpdateApiModel teardown: \(String(describing: escapedModel.teardown))")
         Self.logger.debug("AutoTestUpdateApiModel labels: \(String(describing: escapedModel.labels))")
         Self.logger.debug("AutoTestUpdateApiModel tags: \(String(describing: escapedModel.tags))")
-        // Self.logger.debug("AutoTestUpdateApiModel workItemIdsForLinkWithAutoTest: \(String(describing: escapedModel.workItemIdsForLinkWithAutoTest))")
 
         lock.lock()
         defer { lock.unlock() }
@@ -279,7 +276,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = testit_api_client.AutoTestsAPI.updateAutoTest(autoTestUpdateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in // Added apiResponseQueue for clarity, assuming it's needed as per typical library patterns
+        _ = AutoTestsAPI.adaptersAutoTestsPut(autoTestUpdateApiModel: escapedModel, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { _, error in
             if let error = error {
                 Self.logger.error("Error updating autotest: \(error.localizedDescription)")
                 operationError = error
@@ -309,17 +306,17 @@ class TmsApiClient: ApiClient {
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
-        var createdAutoTestApiResult: AutoTestApiResult? // AutoTestModel?
+        var createdAutoTestApiResult: AutoTestApiResult?
         
-        _ = testit_api_client.AutoTestsAPI.createAutoTest(autoTestCreateApiModel: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AutoTestsAPI.adaptersAutoTestsPost(autoTestCreateApiModel: escapedModel, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error creating autotest: \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
                 createdAutoTestApiResult = data
             } else {
-                Self.logger.error("createAutoTest returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("createAutoTest returned no data and no error")
+                Self.logger.error("adaptersAutoTestsPost returned no data and no error.")
+                operationError = TmsApiClientError.missingApiResponseData("adaptersAutoTestsPost returned no data and no error")
             }
             semaphore.signal()
         }
@@ -332,8 +329,8 @@ class TmsApiClient: ApiClient {
         }
         
         guard let createdTest = createdAutoTestApiResult else {
-            Self.logger.error("createAutoTest response was nil after operation")
-            throw TmsApiClientError.missingApiResponseData("createAutoTest response was nil after operation")
+            Self.logger.error("adaptersAutoTestsPost response was nil after operation")
+            throw TmsApiClientError.missingApiResponseData("adaptersAutoTestsPost response was nil after operation")
         }
         
         let createdId = createdTest.id
@@ -368,12 +365,11 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var searchResults: [AutoTestApiResult]?
 
-        _ = testit_api_client.AutoTestsAPI.apiV2AutoTestsSearchPost(skip: nil, take: nil, orderBy: nil, searchField: nil, searchValue: nil, autoTestSearchApiModel: model, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AutoTestsAPI.adaptersAutoTestsSearchPost(skip: nil, take: nil, orderBy: nil, searchField: nil, searchValue: nil, autoTestSearchApiModel: model, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error searching autotests: \(error.localizedDescription)")
                 operationError = error
             } else {
-                // Data can be nil or an empty array if no results are found, which is not an error itself.
                 searchResults = data
             }
             semaphore.signal()
@@ -386,9 +382,6 @@ class TmsApiClient: ApiClient {
             throw error
         }
         
-        // Note: searchResults can be nil or an empty array if the API call was successful but found no matching autotests.
-        // The original logic `tests.first` gracefully handles an empty array by returning nil.
-        // If searchResults is nil due to an issue not caught by `operationError` (e.g. malformed success response without error flag), this will also result in nil.
         Self.logger.debug("Search for autotest by external ID \"\(externalId)\" found \(searchResults?.count ?? 0) result(s).")
         return searchResults?.first
     }
@@ -407,11 +400,9 @@ class TmsApiClient: ApiClient {
                 let attemptSemaphore = DispatchSemaphore(value: 0)
                 var attemptError: Error?
                 
-                _ = testit_api_client.AutoTestsAPI.linkAutoTestToWorkItem(id: id, workItemIdApiModel: WorkItemIdApiModel(id: workItemId), apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+                _ = AutoTestsAPI.adaptersAutoTestsIdWorkItemsPost(id: id, workItemIdApiModel: WorkItemIdApiModel(id: workItemId), apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { _, error in
                     if let error = error {
                         attemptError = error
-                    } else {
-                        // Successful link
                     }
                     attemptSemaphore.signal()
                 }
@@ -419,44 +410,38 @@ class TmsApiClient: ApiClient {
                 attemptSemaphore.wait()
                 
                 if let error = attemptError {
-                    lastError = error // Store the last error encountered for this workItemId
+                    lastError = error
                     Self.logger.error("Cannot link autotest \(id) to work item \(workItemId) on attempt \(attempt + 1): \(error.localizedDescription)")
                     if attempt < Self.MAX_TRIES - 1 {
-                         Thread.sleep(forTimeInterval: TimeInterval(Self.WAITING_TIME_MS) / 1000.0) // Keep sleep for retry delay
-                    } else {
-                        // This was the last attempt for this workItemId, error will be thrown after loop if not successful
+                         Thread.sleep(forTimeInterval: TimeInterval(Self.WAITING_TIME_MS) / 1000.0)
                     }
                 } else {
                     Self.logger.debug("Link autotest \(id) to workitem \(workItemId) successful on attempt \(attempt + 1).")
                     success = true
-                    lastError = nil // Clear last error on success for this workItemId
-                    break // Exit retry loop for this workItemId on success
+                    lastError = nil
+                    break
                 }
             }
-            // If after all retries for a specific work item it failed, throw the last error encountered for it
             if !success, let errorToThrow = lastError {
                  Self.logger.error("Failed to link autotest \(id) to work item \(workItemId) after \(Self.MAX_TRIES) attempts.")
-                 throw errorToThrow // Throw immediately if a single workItem link fails after all retries
+                 throw errorToThrow
             }
         }
-        // If the loop completes without throwing, all links were successful or workItemIds was empty
     }
 
     func unlinkAutoTestToWorkItem(id: String, workItemId: String) throws -> Bool {
         Self.logger.debug("TmsApiClient: unlinkAutoTestToWorkItem... with id: \(id) and workItemId: \(workItemId)")
 
-        // No lock needed according to Kotlin version? Consider if needed for safety.
-        // Following existing pattern of no lock for this method.
         for attempt in 0..<Self.MAX_TRIES {
             let attemptSemaphore = DispatchSemaphore(value: 0)
             var attemptError: Error?
-            var successFlag = false // Flag to indicate success for the current attempt
+            var successFlag = false
 
-            _ = testit_api_client.AutoTestsAPI.deleteAutoTestLinkFromWorkItem(id: id, workItemId: workItemId, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+            _ = AutoTestsAPI.adaptersAutoTestsIdWorkItemsDelete(id: id, workItemId: workItemId, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { _, error in
                 if let error = error {
                     attemptError = error
                 } else {
-                    successFlag = true // Mark success for this attempt
+                    successFlag = true
                 }
                 attemptSemaphore.signal()
             }
@@ -466,53 +451,40 @@ class TmsApiClient: ApiClient {
             if let error = attemptError {
                 Self.logger.error("Failed to unlink autotest \(id) from work item \(workItemId) on attempt \(attempt + 1): \(error.localizedDescription)")
                 if attempt == Self.MAX_TRIES - 1 {
-                    throw error // Re-throw after last attempt
+                    throw error
                 }
-                // If not the last attempt, sleep and retry
                 Thread.sleep(forTimeInterval: TimeInterval(Self.WAITING_TIME_MS) / 1000.0)
             } else if successFlag {
                 Self.logger.debug("Unlinked autotest \(id) from workitem \(workItemId) on attempt \(attempt + 1).")
-                return true // Successfully unlinked
+                return true
             } else {
-                // This case should ideally not be hit if API guarantees error or success.
-                // If it is hit, it means no error and no explicit success signal from the API logic for this attempt.
-                // Log it and continue to retry or fail after max attempts.
                 Self.logger.warning("Unlink attempt \(attempt + 1) for autotest \(id) from workitem \(workItemId) neither errored nor explicitly succeeded. Retrying if attempts remain.")
                 if attempt == Self.MAX_TRIES - 1 {
-                    // If this was the last attempt and it was ambiguous, throw a generic error or the last known specific error if one was ever set.
-                    // For now, throwing a generic one indicating failure to confirm unlinking.
                     throw TmsApiClientError.missingApiResponseData("Failed to confirm unlinking after max retries for autotest \(id) from workitem \(workItemId).")
                 }
                 Thread.sleep(forTimeInterval: TimeInterval(Self.WAITING_TIME_MS) / 1000.0)
             }
         }
-        // This part should ideally not be reached if logic always returns true on success or throws an error on definitive failure.
-        // If the loop completes without returning true (success) or throwing an error, it implies MAX_TRIES might be 0 or some unexpected flow.
         Self.logger.error("Failed to unlink autotest \(id) from work item \(workItemId) after \(Self.MAX_TRIES) attempts, and loop completed without explicit success or error throw.")
-        return false // Default to false if loop completes without success, though ideally an error should have been thrown.
+        return false
     }
 
     func getWorkItemsLinkedToTest(id: String) throws -> [AutoTestWorkItemIdentifierApiResult] {
         Self.logger.debug("TmsApiClient: getWorkItemsLinkedToTest... with id: \(id)")
-
-        // No lock needed according to Kotlin version? Consider if needed for safety if there are shared mutable states accessed by this path.
-        // For now, following the existing pattern of no lock for this specific method.
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         var workItemsResult: [AutoTestWorkItemIdentifierApiResult]?
         
-        // Using false for isDeleted and isWorkItemDeleted as per the original synchronous call's parameters.
-        _ = testit_api_client.AutoTestsAPI.getWorkItemsLinkedToAutoTest(id: id, isDeleted: false, isWorkItemDeleted: false, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AutoTestsAPI.adaptersAutoTestsIdWorkItemsGet(id: id, isDeleted: false, isWorkItemDeleted: false, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error retrieving work items linked to test \(id): \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
                 workItemsResult = data
             } else {
-                // This case: no error, but also no data. Treat as an issue if a non-optional array is expected.
-                Self.logger.error("getWorkItemsLinkedToAutoTest for test \(id) returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("getWorkItemsLinkedToAutoTest returned no data and no error for test ID: \(id)")
+                Self.logger.error("adaptersAutoTestsIdWorkItemsGet for test \(id) returned no data and no error.")
+                operationError = TmsApiClientError.missingApiResponseData("adaptersAutoTestsIdWorkItemsGet returned no data and no error for test ID: \(id)")
             }
             semaphore.signal()
         }
@@ -524,11 +496,7 @@ class TmsApiClient: ApiClient {
             throw error
         }
         
-        // If we reach here, operationError is nil. We must have data.
-        // The guard below ensures workItemsResult is not nil. If it were, an error would have been set above.
         guard let result = workItemsResult else {
-            // This path should ideally not be reached if the logic above correctly sets operationError
-            // when data is nil and no error object was provided by the API.
             Self.logger.error("Retrieved nil work items for test \(id) without an explicit API error. This is unexpected.")
             throw TmsApiClientError.missingApiResponseData("Retrieved nil work items for test ID: \(id) without explicit API error")
         }
@@ -546,30 +514,26 @@ class TmsApiClient: ApiClient {
             escapedModels[i].escapeHtmlProperties()
         }
 
-        // No lock needed according to Kotlin version? Consider if needed for safety.
         guard let runUUID = UUID(uuidString: testRunUuid) else {
             print("[TestItAdapter] ERROR: Invalid Test Run UUID format: \(testRunUuid)")
             Self.logger.error("Cannot send results: Invalid Test Run UUID format \"\(testRunUuid)\"")
             throw TmsApiClientError.invalidUUIDFormat("Invalid Test Run UUID format")
         }
         
-        print("[TestItAdapter] Calling TestRunsAPI.setAutoTestResultsForTestRun...")
+        print("[TestItAdapter] Calling TestRunsAPI.adaptersTestRunsIdTestResultsPost...")
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         var resultUUIDsFromApi: [UUID]?
         
-        _ = testit_api_client.TestRunsAPI.setAutoTestResultsForTestRun(id: runUUID, autoTestResultsForTestRunModel: escapedModels, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = TestRunsAPI.adaptersTestRunsIdTestResultsPost(id: runUUID, autoTestResultsForTestRunModel: escapedModels, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error sending test results for test run \(testRunUuid): \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
                 resultUUIDsFromApi = data
             } else {
-                // If API returns no error AND no data, and a [UUID]? is expected, this implies an empty list of results.
-                // However, the original function expects [String], so an empty list here is valid.
-                // If the API *guarantees* non-nil on success, this might be an error. Assuming nil means empty for now.
-                Self.logger.debug("setAutoTestResultsForTestRun for test run \(testRunUuid) returned no data and no error. Interpreting as empty results.")
-                resultUUIDsFromApi = [] // Explicitly set to empty array if API returns nil data without error.
+                Self.logger.debug("adaptersTestRunsIdTestResultsPost for test run \(testRunUuid) returned no data and no error. Interpreting as empty results.")
+                resultUUIDsFromApi = []
             }
             semaphore.signal()
         }
@@ -581,23 +545,19 @@ class TmsApiClient: ApiClient {
             throw error
         }
         
-        // If operationError is nil, we proceed. resultUUIDsFromApi could be nil if API truly returns nil on success (which we convert to [] above)
-        // or an array (possibly empty) of UUIDs.
         guard let receivedUUIDs = resultUUIDsFromApi else {
-            // This path should not be reached if the completion handler logic above correctly converts nil data (without error) to an empty array.
-            Self.logger.error("setAutoTestResultsForTestRun for test run \(testRunUuid) resulted in nil UUIDs unexpectedly after processing.")
-            throw TmsApiClientError.missingApiResponseData("setAutoTestResultsForTestRun resulted in nil UUIDs unexpectedly for test run: \(testRunUuid)")
+            Self.logger.error("adaptersTestRunsIdTestResultsPost for test run \(testRunUuid) resulted in nil UUIDs unexpectedly after processing.")
+            throw TmsApiClientError.missingApiResponseData("adaptersTestRunsIdTestResultsPost resulted in nil UUIDs unexpectedly for test run: \(testRunUuid)")
         }
         
         Self.logger.debug("Sent \(models.count) test results for test run \(testRunUuid). Received \(receivedUUIDs.count) result IDs.")
-        return receivedUUIDs.map { $0.uuidString } // Convert UUIDs to Strings
+        return receivedUUIDs.map { $0.uuidString }
     }
 
     func addAttachment(path: String) throws -> String {
         print("[TestItAdapter] TmsApiClient.addAttachment called with path: \(path)")
         Self.logger.debug("TmsApiClient: addAttachment... with path: \(path)")
 
-        // No lock needed according to Kotlin version? Consider if needed for safety.
         let fileURL = URL(fileURLWithPath: path)
         guard FileManager.default.fileExists(atPath: path) else {
             print("[TestItAdapter] ERROR: File not found at path: \(path)")
@@ -606,16 +566,10 @@ class TmsApiClient: ApiClient {
             throw TmsApiClientError.fileNotFound(path)
         }
 
-        // Log the current working directory
         let currentDirectory = FileManager.default.currentDirectoryPath
         Self.logger.debug("Current working directory: \(currentDirectory)")
 
-        // Check file permissions
         do {
-            // let attributes = try FileManager.default.attributesOfItem(atPath: path)
-            //Self.logger.debug("File attributes: \(attributes)")
-            
-            // Check read permissions
             if !FileManager.default.isReadableFile(atPath: path) {
                 print("[TestItAdapter] ERROR: No read permission for file at path: \(path)")
                 Self.logger.error("Cannot add attachment: No read permission for file at path \"\(path)\"")
@@ -632,7 +586,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var attachmentModelResponse: AttachmentModel?
         
-        _ = testit_api_client.AttachmentsAPI.apiV2AttachmentsPost(file: fileURL, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = AttachmentsAPI.adaptersAttachmentsPost(file: fileURL, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 print("[TestItAdapter] ERROR uploading attachment: \(error.localizedDescription)")
                 Self.logger.error("Error uploading attachment from path \"\(path)\": \(error.localizedDescription)")
@@ -642,8 +596,8 @@ class TmsApiClient: ApiClient {
                 attachmentModelResponse = data
             } else {
                 print("[TestItAdapter] ERROR: API returned no data and no error")
-                Self.logger.error("apiV2AttachmentsPost for path \"\(path)\" returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("apiV2AttachmentsPost for path \"\(path)\" returned no data and no error")
+                Self.logger.error("adaptersAttachmentsPost for path \"\(path)\" returned no data and no error.")
+                operationError = TmsApiClientError.missingApiResponseData("adaptersAttachmentsPost for path \"\(path)\" returned no data and no error")
             }
             semaphore.signal()
         }
@@ -660,8 +614,8 @@ class TmsApiClient: ApiClient {
         
         guard let model = attachmentModelResponse else {
             print("[TestItAdapter] ERROR: Attachment response was nil")
-            Self.logger.error("apiV2AttachmentsPost for path \"\(path)\" response was nil after operation, and no explicit error was caught.")
-            throw TmsApiClientError.missingApiResponseData("apiV2AttachmentsPost response was nil for path \"\(path)\" after operation")
+            Self.logger.error("adaptersAttachmentsPost for path \"\(path)\" response was nil after operation, and no explicit error was caught.")
+            throw TmsApiClientError.missingApiResponseData("adaptersAttachmentsPost response was nil for path \"\(path)\" after operation")
         }
         
         print("[TestItAdapter] ✓✓✓ Attachment uploaded successfully! ID: \(model.id.uuidString)")
@@ -671,22 +625,20 @@ class TmsApiClient: ApiClient {
 
     func getTestResult(uuid: UUID) throws -> TestResultResponse {
         Self.logger.debug("TmsApiClient: getTestResult... with uuid: \(uuid)")
-
-        // No lock needed according to Kotlin version? Consider if needed for safety.
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         var testResultResponse: TestResultResponse?
         
-        _ = testit_api_client.TestResultsAPI.apiV2TestResultsIdGet(id: uuid, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { data, error in
+        _ = TestResultsAPI.adaptersTestResultsIdGet(id: uuid, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error getting test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
             } else if let data = data {
                 testResultResponse = data
             } else {
-                Self.logger.error("apiV2TestResultsIdGet for ID \(uuid.uuidString) returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("apiV2TestResultsIdGet returned no data and no error for ID: \(uuid.uuidString)")
+                Self.logger.error("adaptersTestResultsIdGet for ID \(uuid.uuidString) returned no data and no error.")
+                operationError = TmsApiClientError.missingApiResponseData("adaptersTestResultsIdGet returned no data and no error for ID: \(uuid.uuidString)")
             }
             semaphore.signal()
         }
@@ -699,31 +651,28 @@ class TmsApiClient: ApiClient {
         }
         
         guard let response = testResultResponse else {
-            Self.logger.error("apiV2TestResultsIdGet for ID \(uuid.uuidString) response was nil after operation, and no explicit error was caught.")
-            throw TmsApiClientError.missingApiResponseData("apiV2TestResultsIdGet response was nil after operation for ID: \(uuid.uuidString)")
+            Self.logger.error("adaptersTestResultsIdGet for ID \(uuid.uuidString) response was nil after operation, and no explicit error was caught.")
+            throw TmsApiClientError.missingApiResponseData("adaptersTestResultsIdGet response was nil after operation for ID: \(uuid.uuidString)")
         }
         
         return response
     }
 
-    func updateTestResult(uuid: UUID, model: TestResultUpdateV2Request) throws {
+    func updateTestResult(uuid: UUID, model: TestResultUpdateRequest) throws {
         Self.logger.debug("TmsApiClient: updateTestResult... with uuid: \(uuid)")
 
         // Escape HTML in model before sending
         var escapedModel = model
         escapedModel.escapeHtmlProperties()
-
-         // No lock needed according to Kotlin version? Consider if needed for safety.
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = testit_api_client.TestResultsAPI.apiV2TestResultsIdPut(id: uuid, testResultUpdateV2Request: escapedModel, apiResponseQueue: TestitApiClientAPI.apiResponseQueue) { _, error in
+        _ = TestResultsAPI.adaptersTestResultsIdPut(id: uuid, testResultUpdateRequest: escapedModel, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { _, error in
             if let error = error {
                 Self.logger.error("Error updating test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
             }
-            // On success, data is Void?, so no explicit data to store.
             semaphore.signal()
         }
         
@@ -736,9 +685,6 @@ class TmsApiClient: ApiClient {
         
         Self.logger.debug("Updated test result: \(uuid.uuidString)")
     }
-    
-    // MARK: - Helper for TestRunV2ApiResult extension (if needed)
-    // Add extension if TestRunV2ApiResult stub doesn't have testResults property
 }
 
 // Define custom errors for better context
@@ -764,20 +710,3 @@ enum TmsApiClientError: Error, LocalizedError {
         }
     }
 }
-
-// Example extension if TestRunV2ApiResult stub needs modification
-extension TestRunV2ApiResult {
-    // NOTE: This is needed for getTestFromTestRun to work.
-    // Define testResults based on actual API response structure
-    // This might require another stub model like TestResultV2ShortModel
-     var testResults: [TestResultV2ShortModel]? {
-         // return actual property or parse from raw response data
-         return nil // Placeholder - Needs real implementation or better stub
-     }
-}
-
-// Example stub if TestResultV2ShortModel is needed
- struct TestResultV2ShortModel { // Placeholder - Needs real implementation
-     var configurationId: UUID?
-     var autoTest: AutoTestApiResult? // Assumes AutoTestApiResult stub exists
- } 

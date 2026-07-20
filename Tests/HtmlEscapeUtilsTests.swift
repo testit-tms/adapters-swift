@@ -1,6 +1,6 @@
 import XCTest
 @testable import TestItAdapter
-import testit_api_client
+import AdaptersApi
 
 class HtmlEscapeUtilsTests: XCTestCase {
     
@@ -227,8 +227,8 @@ class HtmlEscapeUtilsTests: XCTestCase {
         // Arrange
         let projectId = UUID()
         var model = AutoTestCreateApiModel(
-            externalId: "test-external-id",
             projectId: projectId,
+            externalId: "test-external-id",
             name: "<script>Test Name</script>",
             namespace: "<div>Test Namespace</div>",
             classname: "<p>Test Class</p>",
@@ -242,23 +242,21 @@ class HtmlEscapeUtilsTests: XCTestCase {
         model.steps = [
             AutoTestStepApiModel(
                 title: "<h2>Step Title</h2>",
-                description: "<p>Step description</p>",
-                expected: "<div>Expected result</div>",
-                testData: "<code>Test data</code>"
+                description: "<p>Step description</p>"
             )
         ]
         
         // Add labels with HTML
         model.labels = [
-            LabelApiModel(name: "<label>Label Name</label>", value: "<value>Label Value</value>")
+            LabelApiModel(name: "<label>Label Name</label>", globalId: 1)
         ]
         
         // Add links with HTML
         model.links = [
             LinkCreateApiModel(
                 title: "<title>Link Title</title>",
-                description: "<desc>Link Description</desc>",
                 url: "https://example.com",
+                description: "<desc>Link Description</desc>",
                 type: LinkType.defect
             )
         ]
@@ -277,12 +275,9 @@ class HtmlEscapeUtilsTests: XCTestCase {
         // Check steps
         XCTAssertEqual(model.steps?[0].title, "\\<h2>Step Title\\</h2>")
         XCTAssertEqual(model.steps?[0].description, "\\<p>Step description\\</p>")
-        XCTAssertEqual(model.steps?[0].expected, "\\<div>Expected result\\</div>")
-        XCTAssertEqual(model.steps?[0].testData, "\\<code>Test data\\</code>")
         
         // Check labels
         XCTAssertEqual(model.labels?[0].name, "\\<label>Label Name\\</label>")
-        XCTAssertEqual(model.labels?[0].value, "\\<value>Label Value\\</value>")
         
         // Check links (URL should not be escaped)
         XCTAssertEqual(model.links?[0].title, "\\<title>Link Title\\</title>")
@@ -293,8 +288,8 @@ class HtmlEscapeUtilsTests: XCTestCase {
     func testRealApiModel_AutoTestCreateApiModel_DoesNotEscapeExternalId() {
         let projectId = UUID()
         var model = AutoTestCreateApiModel(
-            externalId: "<test>",
             projectId: projectId,
+            externalId: "<test>",
             name: "<b>Name</b>"
         )
 
@@ -321,36 +316,35 @@ class HtmlEscapeUtilsTests: XCTestCase {
     func testRealApiModel_AutoTestResultsForTestRunModel_EscapeHtmlProperties() {
         // Arrange
         let configurationId = UUID()
-        let autoTestId = UUID()
         
         var model = AutoTestResultsForTestRunModel(
             configurationId: configurationId,
             autoTestExternalId: "test-external-id",
             outcome: .passed,
             message: "<div>Test message with <b>HTML</b></div>",
-            trace: "<pre>Stack trace with <code>HTML</code></pre>"
+            traces: "<pre>Stack trace with <code>HTML</code></pre>"
         )
         
         // Add step results with HTML
         model.stepResults = [
-            StepResult(
+            AttachmentPutModelAutoTestStepResultsModel(
                 title: "<h3>Step Title</h3>",
                 description: "<p>Step description</p>",
                 info: "<info>Additional info</info>",
                 outcome: .passed,
                 duration: 1000,
-                parameters: ["<param>Parameter 1</param>", "Normal parameter"]
+                parameters: ["param": "<param>Parameter 1</param>", "normal": "Normal parameter"]
             )
         ]
         
         // Add setup results
         model.setupResults = [
-            FixtureResult(outcome: .passed, duration: 500)
+            AttachmentPutModelAutoTestStepResultsModel(outcome: .passed, duration: 500)
         ]
         
         // Add teardown results
         model.teardownResults = [
-            FixtureResult(outcome: .passed, duration: 300)
+            AttachmentPutModelAutoTestStepResultsModel(outcome: .passed, duration: 300)
         ]
         
         // Act
@@ -358,13 +352,14 @@ class HtmlEscapeUtilsTests: XCTestCase {
         
         // Assert
         XCTAssertEqual(model.message, "\\<div>Test message with \\<b>HTML\\</b>\\</div>")
-        XCTAssertEqual(model.trace, "\\<pre>Stack trace with \\<code>HTML\\</code>\\</pre>")
+        XCTAssertEqual(model.traces, "\\<pre>Stack trace with \\<code>HTML\\</code>\\</pre>")
         
         // Check step results
         XCTAssertEqual(model.stepResults?[0].title, "\\<h3>Step Title\\</h3>")
         XCTAssertEqual(model.stepResults?[0].description, "\\<p>Step description\\</p>")
         XCTAssertEqual(model.stepResults?[0].info, "\\<info>Additional info\\</info>")
-        XCTAssertEqual(model.stepResults?[0].parameters, ["\\<param>Parameter 1\\</param>", "Normal parameter"])
+        XCTAssertEqual(model.stepResults?[0].parameters?["param"], "\\<param>Parameter 1\\</param>")
+        XCTAssertEqual(model.stepResults?[0].parameters?["normal"], "Normal parameter")
     }
 
     func testRealApiModel_AutoTestResultsForTestRunModel_DoesNotEscapeAutoTestExternalId() {
@@ -381,21 +376,21 @@ class HtmlEscapeUtilsTests: XCTestCase {
         XCTAssertEqual(model.message, "\\<b>passed\\</b>")
     }
     
-    func testRealApiModel_TestResultUpdateV2Request_EscapeHtmlProperties() {
+    func testRealApiModel_TestResultUpdateRequest_EscapeHtmlProperties() {
         // Arrange
-        var model = TestResultUpdateV2Request(
+        var model = TestResultUpdateRequest(
             comment: "<div>Test comment with <i>HTML</i> tags</div>"
         )
         
-        // Add step results
-        model.stepResults = [
-            AttachmentPutModelAutoTestStepResultsModel(
+        // Add setup results (these support title/description escaping)
+        model.setupResults = [
+            AutoTestStepResultUpdateRequest(
                 title: "<title>Step Title</title>",
                 description: "<desc>Step Description</desc>",
                 info: "<info>Step Info</info>",
                 outcome: .passed,
                 duration: 1000,
-                parameters: ["<param1>Value1</param1>", "Normal value"]
+                parameters: ["param1": "<param1>Value1</param1>", "normal": "Normal value"]
             )
         ]
         
@@ -405,11 +400,12 @@ class HtmlEscapeUtilsTests: XCTestCase {
         // Assert
         XCTAssertEqual(model.comment, "\\<div>Test comment with \\<i>HTML\\</i> tags\\</div>")
         
-        // Check step results
-        XCTAssertEqual(model.stepResults?[0].title, "\\<title>Step Title\\</title>")
-        XCTAssertEqual(model.stepResults?[0].description, "\\<desc>Step Description\\</desc>")
-        XCTAssertEqual(model.stepResults?[0].info, "\\<info>Step Info\\</info>")
-        XCTAssertEqual(model.stepResults?[0].parameters, ["\\<param1>Value1\\</param1>", "Normal value"])
+        // Check setup results
+        XCTAssertEqual(model.setupResults?[0].title, "\\<title>Step Title\\</title>")
+        XCTAssertEqual(model.setupResults?[0].description, "\\<desc>Step Description\\</desc>")
+        XCTAssertEqual(model.setupResults?[0].info, "\\<info>Step Info\\</info>")
+        XCTAssertEqual(model.setupResults?[0].parameters?["param1"], "\\<param1>Value1\\</param1>")
+        XCTAssertEqual(model.setupResults?[0].parameters?["normal"], "Normal value")
     }
     
     // MARK: - Performance Tests
@@ -441,8 +437,8 @@ class HtmlEscapeUtilsTests: XCTestCase {
         
         for i in 0..<100 {
             var model = AutoTestCreateApiModel(
-                externalId: "test-\(i)",
                 projectId: projectId,
+                externalId: "test-\(i)",
                 name: "<script>Test \(i)</script>",
                 namespace: "<div>Namespace \(i)</div>",
                 classname: "<p>Class \(i)</p>",
@@ -453,9 +449,7 @@ class HtmlEscapeUtilsTests: XCTestCase {
             model.steps = [
                 AutoTestStepApiModel(
                     title: "<h2>Step \(i)</h2>",
-                    description: "<p>Description \(i)</p>",
-                    expected: "<div>Expected \(i)</div>",
-                    testData: "<code>Data \(i)</code>"
+                    description: "<p>Description \(i)</p>"
                 )
             ]
             
@@ -703,8 +697,8 @@ extension HtmlEscapeUtilsTests {
         // Arrange - Test the complete workflow with real API models
         let projectId = UUID()
         var autoTestModel = AutoTestCreateApiModel(
-            externalId: "integration-test",
             projectId: projectId,
+            externalId: "integration-test",
             name: "<script>Integration Test</script>",
             description: "<div>Integration test with <b>HTML</b></div>"
         )
@@ -714,10 +708,10 @@ extension HtmlEscapeUtilsTests {
             autoTestExternalId: "integration-test",
             outcome: .passed,
             message: "<p>Test passed with <em>success</em></p>",
-            trace: "<pre>No errors</pre>"
+            traces: "<pre>No errors</pre>"
         )
         
-        var updateModel = TestResultUpdateV2Request(
+        var updateModel = TestResultUpdateRequest(
             comment: "<div>Updated comment with <strong>HTML</strong></div>"
         )
         
@@ -731,7 +725,7 @@ extension HtmlEscapeUtilsTests {
         XCTAssertEqual(autoTestModel.description, "\\<div>Integration test with \\<b>HTML\\</b>\\</div>")
         
         XCTAssertEqual(resultModel.message, "\\<p>Test passed with \\<em>success\\</em>\\</p>")
-        XCTAssertEqual(resultModel.trace, "\\<pre>No errors\\</pre>")
+        XCTAssertEqual(resultModel.traces, "\\<pre>No errors\\</pre>")
         
         XCTAssertEqual(updateModel.comment, "\\<div>Updated comment with \\<strong>HTML\\</strong>\\</div>")
     }
