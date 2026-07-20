@@ -222,7 +222,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var searchResults: [TestResultShortResponse]?
 
-        _ = TestResultsAPI.adaptersTestResultsSearchPost(
+        _ = AdaptersApi.TestResultsAPI.adaptersTestResultsSearchPost(
             skip: nil,
             take: nil,
             orderBy: nil,
@@ -630,7 +630,7 @@ class TmsApiClient: ApiClient {
         var operationError: Error?
         var testResultResponse: TestResultResponse?
         
-        _ = TestResultsAPI.adaptersTestResultsIdGet(id: uuid, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
+        _ = AdaptersApi.TestResultsAPI.adaptersTestResultsIdGet(id: uuid, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { data, error in
             if let error = error {
                 Self.logger.error("Error getting test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
@@ -668,7 +668,7 @@ class TmsApiClient: ApiClient {
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
         
-        _ = TestResultsAPI.adaptersTestResultsIdPut(id: uuid, testResultUpdateRequest: escapedModel, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { _, error in
+        _ = AdaptersApi.TestResultsAPI.adaptersTestResultsIdPut(id: uuid, testResultUpdateRequest: escapedModel, apiResponseQueue: AdaptersApiAPI.apiResponseQueue) { _, error in
             if let error = error {
                 Self.logger.error("Error updating test result by ID \(uuid.uuidString): \(error.localizedDescription)")
                 operationError = error
