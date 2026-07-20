@@ -31,6 +31,8 @@ let package = Package(
                 // Contains `extension String: CodingKey` which conflicts in Swift 6 toolchains.
                 // ExtensionsPatched.swift is the local replacement without that conformance.
                 "Extensions.swift",
+                // Unused OpenAPI model; depends on CollectionOperator/IFilter types not vendored here.
+                "Models/CollectionFilter.swift",
             ]
         ),
         .target(

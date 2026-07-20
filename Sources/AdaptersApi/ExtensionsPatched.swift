@@ -1,8 +1,6 @@
 // ExtensionsPatched.swift
 //
 // Local replacement for generated `Extensions.swift`.
-// We intentionally omit `extension String: CodingKey` to avoid redundant conformance errors
-// in Swift 6 toolchains when other dependencies provide the same conformance.
 //
 
 import Foundation
@@ -106,6 +104,26 @@ extension JSONEncodable where Self: Encodable {
         }
         return data.encodeToJSON()
     }
+}
+
+extension String: CodingKey {
+
+    public var stringValue: String {
+        return self
+    }
+
+    public init?(stringValue: String) {
+        self.init(stringLiteral: stringValue)
+    }
+
+    public var intValue: Int? {
+        return nil
+    }
+
+    public init?(intValue: Int) {
+        return nil
+    }
+
 }
 
 extension KeyedEncodingContainerProtocol {
