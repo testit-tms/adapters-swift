@@ -1,14 +1,14 @@
 import Foundation
-import testit_api_client
+import AdaptersApi
 import os.log
 
 enum Converter {
 
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "Converter")
-    private static let defaultLinkType: testit_api_client.LinkType = .related
+    private static let defaultLinkType: AdaptersApi.LinkType = .related
 
-    private static func toApiLinkType(from rawValue: String) -> testit_api_client.LinkType {
-        guard let linkType = testit_api_client.LinkType(rawValue: rawValue) else {
+    private static func toApiLinkType(from rawValue: String) -> AdaptersApi.LinkType {
+        guard let linkType = AdaptersApi.LinkType(rawValue: rawValue) else {
             logger.warning("Warning: Could not convert LinkType rawValue: \(rawValue). Fallback to Related.")
             return defaultLinkType
         }
@@ -38,9 +38,6 @@ enum Converter {
             setup: nil,
             teardown: nil,
             shouldCreateWorkItem: result.automaticCreationTestCases,
-            workItemIds: nil,
-            attributes: [:],
-            workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
             links: convertPostLinks(result.linkItems),
             tags: result.tags
@@ -79,7 +76,6 @@ enum Converter {
             steps: convertSteps(result.getSteps()),
             setup: [],
             teardown: [],
-            workItemIdsForLinkWithAutoTest: nil,
             labels: labelsPostConvert(result.labels),
             links: convertPutLinks(result.linkItems),
             tags: result.tags
@@ -90,12 +86,12 @@ enum Converter {
     static func testResultToTestResultUpdateModel(result: TestResultResponse,
                                                   setupResults: [AutoTestStepResultUpdateRequest]?,
                                                   teardownResults: [AutoTestStepResultUpdateRequest]?
-    ) -> TestResultUpdateV2Request {
-        let model = TestResultUpdateV2Request(
+    ) -> TestResultUpdateRequest {
+        let model = TestResultUpdateRequest(
             failureClassIds: result.failureClassIds,
             statusCode: result.status?.code,
             comment: result.comment,
-            links: result.links,
+            links: convertLinkApiResultsToCreateLinks(result.links ?? []),
             stepResults: result.stepResults,
             attachments: convertAttachmentsFromResult(result.attachments ?? []),
             duration: result.durationInMs, // Mapping old durationInMs to new duration field.
@@ -208,10 +204,8 @@ enum Converter {
             steps: autoTestApiResult.steps?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
             setup: setup ?? autoTestApiResult.setup?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
             teardown: teardown ?? autoTestApiResult.teardown?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
-            workItemIds: nil,
-            workItemIdsForLinkWithAutoTest: nil,
             labels: labelsConvert(convertLabelApiResultsToLabelShortModels(autoTestApiResult.labels ?? [])),
-            links: links ?? autoTestApiResult.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url,  description: $0.description, type: $0.type, hasInfo: false) },
+            links: links ?? autoTestApiResult.links?.compactMap { LinkUpdateApiModel(title: $0.title, url: $0.url, description: $0.description, type: $0.type) },
             tags: autoTestApiResult.tags
         )
         return model
@@ -301,10 +295,9 @@ enum Converter {
         return links.compactMap { link -> LinkCreateApiModel? in
             return LinkCreateApiModel(
                 title: link.title,
-                url: link.url, // url is non-optional in LinkCreateApiModel and LinkItem
+                url: link.url,
                 description: link.description,
-                type: Optional(toApiLinkType(from: link.type.rawValue)),
-                hasInfo: false // Kept as true, as per previous logic and new non-optional requirement
+                type: toApiLinkType(from: link.type.rawValue)
             )
         }
     }
@@ -312,12 +305,22 @@ enum Converter {
     static func convertPutLinks(_ links: [LinkItem]) -> [LinkUpdateApiModel] {
         return links.compactMap { link -> LinkUpdateApiModel? in
             return LinkUpdateApiModel(
-                id: nil, // New field, LinkItem doesn't have a direct ID to map here
+                id: nil,
                 title: link.title,
                 url: link.url,
                 description: link.description,
-                type: toApiLinkType(from: link.type.rawValue),
-                hasInfo: false // Assuming true, as per existing logic and model requiring it
+                type: toApiLinkType(from: link.type.rawValue)
+            )
+        }
+    }
+
+    private static func convertLinkApiResultsToCreateLinks(_ links: [LinkApiResult]) -> [CreateLinkApiModel] {
+        return links.map { link in
+            CreateLinkApiModel(
+                title: link.title,
+                url: link.url,
+                description: link.description,
+                type: link.type
             )
         }
     }
@@ -387,16 +390,15 @@ enum Converter {
     }
 
     static func labelsConvert(_ labels: [LabelShortModel]) -> [LabelApiModel] {
-        return labels.compactMap { label -> LabelApiModel? in
-            let name = label.name
-            return LabelApiModel(name: name)
+        return labels.map { label in
+            LabelApiModel(name: label.name, globalId: label.globalId)
         }
     }
 
     static func labelsPostConvert(_ labels: [Label]) -> [LabelApiModel] {
          return labels.compactMap { label -> LabelApiModel? in
             guard let name = label.name else { return nil }
-            return LabelApiModel(name: name)
+            return LabelApiModel(name: name, globalId: 0)
         }
     }
 
@@ -437,107 +439,15 @@ enum Converter {
          return updateRequests.isEmpty ? nil : updateRequests // Return nil if empty
     }
 
-    private static func convertStatusApiTypeToStatusType(apiType: TestStatusApiType) -> TestStatusType {
-        return TestStatusType(rawValue: apiType.rawValue)!
-    }
-
-    static func convertAutoTestApiResultToAutoTestModel(autoTestApiResult: AutoTestApiResult?) -> AutoTestModel? {
-        if let apiResult = autoTestApiResult {
-            Self.logger.debug("convertAutoTestApiResultToAutoTestModel... with autoTestApiResult: id: \(apiResult.id), projectId: \(apiResult.projectId), externalId: \(apiResult.externalId ?? "nil"), name: \(apiResult.name), namespace: \(apiResult.namespace ?? "nil"), classname: \(apiResult.classname ?? "nil"), steps: \(apiResult.steps?.count ?? 0) items, setup: \(apiResult.setup?.count ?? 0) items, teardown: \(apiResult.teardown?.count ?? 0) items, title: \(apiResult.title ?? "nil"), description: \(apiResult.description ?? "nil"), isFlaky: \(apiResult.isFlaky), externalKey: \(apiResult.externalKey ?? "nil"), globalId: \(apiResult.globalId), isDeleted: \(apiResult.isDeleted), mustBeApproved: \(apiResult.mustBeApproved), createdDate: \(apiResult.createdDate), modifiedDate: \(apiResult.modifiedDate?.description ?? "nil"), createdById: \(apiResult.createdById), modifiedById: \(apiResult.modifiedById?.uuidString ?? "nil"), lastTestRunId: \(apiResult.lastTestRunId?.uuidString ?? "nil"), lastTestRunName: \(apiResult.lastTestRunName ?? "nil"), lastTestResultId: \(apiResult.lastTestResultId?.uuidString ?? "nil"), lastTestResultConfiguration: \(apiResult.lastTestResultConfiguration?.id.uuidString ?? "nil"), lastTestResultOutcome: \(apiResult.lastTestResultOutcome ?? "nil"), lastTestResultStatus: \(apiResult.lastTestResultStatus?.name ?? "nil"), stabilityPercentage: \(apiResult.stabilityPercentage?.description ?? "nil"), links: \(apiResult.links?.count ?? 0) items, labels: \(apiResult.labels?.count ?? 0) items")
-        } else {
-            Self.logger.debug("convertAutoTestApiResultToAutoTestModel... with autoTestApiResult: nil")
-        }
-
-        guard let apiResult = autoTestApiResult,
-              let externalId = apiResult.externalId // externalId must be present as per AutoTestModel and current linter error
-        else {
-            // lastTestResultOutcome added to guard based on linter error.
-            // externalId re-added to guard based on current linter error.
-            logger.error("Error: Missing apiResult, or externalId for AutoTestModel conversion.")
-            return nil
-        }
-
-        // Assuming apiResult.createdDate is Date and apiResult.modifiedDate is Date?.
-        // Assuming apiResult.name, .globalId etc. are non-optional
-        // on apiResult based on linter feedback and direct usage.
-
-        let model = AutoTestModel(
-            globalId: apiResult.globalId,
-            isDeleted: apiResult.isDeleted,
-            mustBeApproved: apiResult.mustBeApproved,
-            id: apiResult.id,
-            createdDate: apiResult.createdDate,
-            modifiedDate: apiResult.modifiedDate,
-            createdById: apiResult.createdById,
-            modifiedById: apiResult.modifiedById,
-            lastTestRunId: apiResult.lastTestRunId,
-            lastTestRunName: apiResult.lastTestRunName,
-            lastTestResultId: apiResult.lastTestResultId,
-            lastTestResultConfiguration: apiResult.lastTestResultConfiguration.map { ConfigurationShortModel(id: $0.id, name: $0.name) },
-            lastTestResultOutcome: apiResult.lastTestResultOutcome ?? "", // Use unwrapped value from guard
-            lastTestResultStatus: apiResult.lastTestResultStatus.map {
-                TestStatusModel(id: $0.id, name: $0.name,
-                                type: convertStatusApiTypeToStatusType(apiType: $0.type),
-                                isSystem: $0.isSystem, code: $0.code, description: $0.description)
-            }!,
-            stabilityPercentage: apiResult.stabilityPercentage.map { Int($0) },
-            externalId: externalId, // Use unwrapped externalId from guard
-            links: convertLinkApiResultsToPutLinks(apiResult.links ?? []),
-            projectId: apiResult.projectId,
-            name: apiResult.name,
-            namespace: apiResult.namespace,
-            classname: apiResult.classname,
-            steps: convertAutoTestStepApiResultsToSteps(apiResult.steps ?? []).map { autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: $0) },
-            setup: convertAutoTestStepApiResultsToSteps(apiResult.setup ?? []).map { autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: $0) },
-            teardown: convertAutoTestStepApiResultsToSteps(apiResult.teardown ?? []).map { autoTestStepApiModelToAutoTestStepModel(autoTestStepApiModel: $0) },
-            title: apiResult.title,
-            description: apiResult.description,
-            labels: convertLabelApiResultsToLabelShortModels(apiResult.labels ?? []),
-            isFlaky: apiResult.isFlaky,
-            externalKey: apiResult.externalKey
-        )
-        return model
-    }
-
-    private static func convertAutoTestStepApiResultsToSteps(_ steps: [AutoTestStepApiResult]) -> [AutoTestStepApiModel] {
-        // No need to check for null as the input type is non-optional array
-        return steps.compactMap { step -> AutoTestStepApiModel? in
-            let title = step.title
-            return AutoTestStepApiModel(
-                title: title,
-                description: step.description,
-                steps: convertAutoTestStepApiResultsToSteps(step.steps ?? []) // Handle nested optional steps
-            )
-        }
-    }
-
-    private static func convertLinkApiResultsToPutLinks(_ links: [LinkApiResult]) -> [LinkPutModel] {
-        // No need to check for null as the input type is non-optional array
-        return links.compactMap { link -> LinkPutModel? in
-            // link.url is now assumed non-optional based on linter error, so direct assignment is used.
-            // The guard for link.url has been removed.
-
-            return LinkPutModel(
-                id: link.id, // LinkApiResult might have an ID
-                title: link.title,
-                url: link.url, // Use link.url directly
-                description: link.description,
-                type: link.type ?? defaultLinkType,
-                hasInfo: true // Assuming true, as per model requiring it and previous similar conversions
-            )
-        }
-    }
-
     // MARK: - Test Run Update Helpers
 
-    static func buildUpdateEmptyTestRunApiModel(_ testRun: TestRunV2ApiResult) -> UpdateEmptyTestRunApiModel {
+    static func buildUpdateEmptyTestRunApiModel(_ testRun: TestRunApiResult) -> UpdateEmptyTestRunApiModel {
         return UpdateEmptyTestRunApiModel(
             id: testRun.id,
             name: testRun.name,
-            description: testRun.description,
-            launchSource: testRun.launchSource,
             attachments: buildAssignAttachmentApiModels(testRun.attachments),
-            links: buildUpdateLinkApiModels(testRun.links)
+            links: buildUpdateLinkApiModels(testRun.links),
+            tags: testRun.tags
         )
     }
 
@@ -554,8 +464,7 @@ enum Converter {
                 title: link.title,
                 url: link.url,
                 description: link.description,
-                type: link.type ?? defaultLinkType,
-                hasInfo: false
+                type: link.type
             )
         }
     }

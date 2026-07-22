@@ -1,5 +1,5 @@
 import Foundation
-import testit_api_client
+import AdaptersApi
 
 
 protocol ApiClient {
@@ -7,8 +7,8 @@ protocol ApiClient {
     // Updated methods based on the full Kotlin interface
     
     // Test Run Management
-    func createTestRun() async throws -> TestRunV2ApiResult 
-    func getTestRun(uuid: String) throws -> TestRunV2ApiResult // Parameter changed to non-optional String
+    func createTestRun() async throws -> TestRunApiResult
+    func getTestRun(uuid: String) throws -> TestRunApiResult // Parameter changed to non-optional String
     func updateTestRun(uuid: String, name: String) throws // Update test run name
     func completeTestRun(uuid: String) throws // Parameter changed to non-optional String
     func getTestFromTestRun(testRunUuid: String, configurationId: String) throws -> [String] // Parameters changed to non-optional String
@@ -27,5 +27,5 @@ protocol ApiClient {
     func sendTestResults(testRunUuid: String, models: [AutoTestResultsForTestRunModel]) throws -> [String] // Returns list of result IDs (String)
     func addAttachment(path: String) throws -> String // Returns attachment ID (String)
     func getTestResult(uuid: UUID) throws -> TestResultResponse
-    func updateTestResult(uuid: UUID, model: TestResultUpdateV2Request) throws
-} 
+    func updateTestResult(uuid: UUID, model: TestResultUpdateRequest) throws
+}

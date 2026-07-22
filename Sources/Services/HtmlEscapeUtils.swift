@@ -64,7 +64,7 @@ public protocol HtmlEscapable {
 
 // MARK: - API Model Extensions
 
-import testit_api_client
+import AdaptersApi
 
 // Extend API models to support HTML escaping
 extension AutoTestUpdateApiModel: HtmlEscapable {
@@ -336,7 +336,7 @@ extension FixtureResult: HtmlEscapable {
     }
 }
 
-extension TestResultUpdateV2Request: HtmlEscapable {
+extension TestResultUpdateRequest: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
         self.comment = HtmlEscapeUtils.escapeHtmlTags(self.comment)
         

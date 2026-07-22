@@ -18,22 +18,34 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/testit-tms/api-client-swift", .exact("0.5.3"))
+        .package(url: "https://github.com/Flight-School/AnyCodable", .upToNextMajor(from: "0.6.1")),
     ],
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
+        .target(
+            name: "AdaptersApi",
+            dependencies: [
+                .product(name: "AnyCodable", package: "AnyCodable"),
+            ],
+            path: "Sources/AdaptersApi",
+            exclude: [
+                // Contains `extension String: CodingKey` which conflicts in Swift 6 toolchains.
+                // ExtensionsPatched.swift is the local replacement without that conformance.
+                "Extensions.swift",
+                // Unused OpenAPI model; depends on CollectionOperator/IFilter types not vendored here.
+                "Models/CollectionFilter.swift",
+            ]
+        ),
         .target(
             name: "testit-adapters-swift",
             dependencies: [
-                .product(name: "testit-api-client", package: "api-client-swift")
+                "AdaptersApi",
             ],
             path: "Sources",
             exclude: [
+                "AdaptersApi",
                 // This file contains `extension String: CodingKey` which conflicts in Swift 6 toolchains.
                 // We provide a local replacement without that conformance.
-                "SyncStorage/SyncStorageClient/Extensions.swift"
+                "SyncStorage/SyncStorageClient/Extensions.swift",
             ]
         ),
     ]
