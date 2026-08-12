@@ -11,6 +11,8 @@ enum AppProperties {
     static let CONFIGURATION_ID = "configurationId"
     static let TEST_RUN_ID = "testRunId"
     static let TEST_RUN_NAME = "testRunName"
+    static let TEST_RUN_TAGS = "testRunTags"
+    static let TEST_RUN_LINKS = "testRunLinks"
     static let ADAPTER_MODE = "adapterMode"
     static let AUTOMATIC_CREATION_TEST_CASES = "automaticCreationTestCases"
     static let AUTOMATIC_UPDATION_LINKS_TO_TEST_CASES = "automaticUpdationLinksToTestCases"
@@ -36,6 +38,8 @@ enum AppProperties {
             CONFIGURATION_ID: "TMS_CONFIGURATION_ID",
             TEST_RUN_ID: "TMS_TEST_RUN_ID",
             TEST_RUN_NAME: "TMS_TEST_RUN_NAME",
+            TEST_RUN_TAGS: "TMS_TEST_RUN_TAGS",
+            TEST_RUN_LINKS: "TMS_TEST_RUN_LINKS",
             ADAPTER_MODE: "TMS_ADAPTER_MODE",
             AUTOMATIC_CREATION_TEST_CASES: "TMS_AUTOMATIC_CREATION_TEST_CASES",
             CERT_VALIDATION: "TMS_CERT_VALIDATION",
@@ -50,6 +54,8 @@ enum AppProperties {
             CONFIGURATION_ID: "tmsConfigurationId",
             TEST_RUN_ID: "tmsTestRunId",
             TEST_RUN_NAME: "tmsTestRunName",
+            TEST_RUN_TAGS: "tmsTestRunTags",
+            TEST_RUN_LINKS: "tmsTestRunLinks",
             ADAPTER_MODE: "tmsAdapterMode",
             AUTOMATIC_CREATION_TEST_CASES: "tmsAutomaticCreationTestCases",
             CERT_VALIDATION: "tmsCertValidation",
@@ -202,7 +208,7 @@ enum AppProperties {
                  } else {
                       logger.warning("Ignoring invalid boolean value found in source for key '\(sourceKey)': \(value)")
                  }
-            case TEST_RUN_NAME:
+            case TEST_RUN_NAME, TEST_RUN_TAGS, TEST_RUN_LINKS:
                  result[propKey] = value // No format validation here
             case SYNC_STORAGE_PORT:
                 if let port = Int(value), (1...65535).contains(port) {

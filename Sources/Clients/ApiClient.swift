@@ -9,7 +9,7 @@ protocol ApiClient {
     // Test Run Management
     func createTestRun() async throws -> TestRunApiResult
     func getTestRun(uuid: String) throws -> TestRunApiResult // Parameter changed to non-optional String
-    func updateTestRun(uuid: String, name: String) throws // Update test run name
+    func updateTestRun(uuid: String, name: String?, tags: [String]?, links: [UpdateLinkApiModel]?) throws
     func completeTestRun(uuid: String) throws // Parameter changed to non-optional String
     func getTestFromTestRun(testRunUuid: String, configurationId: String) throws -> [String] // Parameters changed to non-optional String
 
