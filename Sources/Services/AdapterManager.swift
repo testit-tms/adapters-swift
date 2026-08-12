@@ -105,8 +105,8 @@ class AdapterManager {
             // and not passed through the logic below (for example, when restarting with an already existing ID)
             self.writer?.setTestRun(testRunId: initialTestRunId)
             
-            // Update test run name if provided and different from current name
-            await updateTestRunNameIfNeeded(testRunId: initialTestRunId)
+            // Apply name / tags / links as early as possible (while run is still In Progress)
+            await applyTestRunMetadataIfNeeded(testRunId: initialTestRunId)
             return
         }
 
@@ -122,8 +122,8 @@ class AdapterManager {
                 self.writer?.setTestRun(testRunId: envValue)
             }
             
-            // Update test run name if provided and different from current name
-            await updateTestRunNameIfNeeded(testRunId: envValue)
+            // Apply name / tags / links as early as possible (while run is still In Progress)
+            await applyTestRunMetadataIfNeeded(testRunId: envValue)
             return
         }
 
@@ -592,29 +592,51 @@ class AdapterManager {
 
     // MARK: - Mode & Test Run Info
 
-    private func updateTestRunNameIfNeeded(testRunId: String) async {
-        let testRunName = lock.withLock { self.clientConfiguration.testRunName }
-        
-        // Skip if testRunName is not provided or is "null"
-        guard !testRunName.isEmpty && testRunName.lowercased() != "null" else {
-            Self.logger.debug("testRunName is not provided or is null. Skipping name update.")
+    private func applyTestRunMetadataIfNeeded(testRunId: String) async {
+        let (testRunName, tags, links) = lock.withLock {
+            (
+                self.clientConfiguration.testRunName,
+                self.clientConfiguration.testRunTags,
+                self.clientConfiguration.testRunLinks
+            )
+        }
+
+        let hasName = !testRunName.isEmpty && testRunName.lowercased() != "null"
+        let hasTags = !tags.isEmpty
+        let hasLinks = !links.isEmpty
+
+        guard hasName || hasTags || hasLinks else {
+            Self.logger.debug("No test run name/tags/links configured. Skipping early metadata update.")
             return
         }
-        
+
         do {
-            // Get current test run to compare names
             let currentTestRun = try self.client.getTestRun(uuid: testRunId)
-            
-            // Compare current name with configured name
-            if currentTestRun.name != testRunName {
-                Self.logger.info("Test run name differs. Current: '\(currentTestRun.name)', Config: '\(testRunName)'. Updating...")
-                try self.client.updateTestRun(uuid: testRunId, name: testRunName)
-                Self.logger.info("Successfully updated test run name to: '\(testRunName)'")
-            } else {
-                Self.logger.debug("Test run name matches configuration: '\(testRunName)'. No update needed.")
+            let nameToApply: String? = (hasName && currentTestRun.name != testRunName) ? testRunName : nil
+            let updateLinks = TestRunMetadataParser.toUpdateLinkApiModels(links)
+
+            let needsTagMerge = !Set(tags).isSubset(of: Set(currentTestRun.tags))
+            let existingUrls = Set(currentTestRun.links.map(\.url))
+            let needsLinkMerge = updateLinks.contains { !existingUrls.contains($0.url) }
+
+            guard nameToApply != nil || needsTagMerge || needsLinkMerge else {
+                Self.logger.debug("Test run metadata already up to date for \(testRunId).")
+                return
             }
+
+            try self.client.updateTestRun(
+                uuid: testRunId,
+                name: nameToApply,
+                tags: hasTags ? tags : nil,
+                links: hasLinks ? updateLinks : nil
+            )
+            Self.logger.info(
+                "Applied early test run metadata for \(testRunId): name=\(nameToApply ?? "unchanged"), tags=\(tags), links=\(links.count) item(s)"
+            )
         } catch {
-            Self.logger.warning("Failed to update test run name: \(error.localizedDescription). Continuing with existing name.")
+            Self.logger.warning(
+                "Failed to apply early test run metadata: \(error.localizedDescription). Continuing without metadata update."
+            )
         }
     }
 

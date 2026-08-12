@@ -48,5 +48,17 @@ let package = Package(
                 "SyncStorage/SyncStorageClient/Extensions.swift",
             ]
         ),
+        .testTarget(
+            name: "testit-adapters-swiftTests",
+            dependencies: [
+                "testit-adapters-swift",
+                "AdaptersApi",
+            ],
+            path: "Tests",
+            exclude: [
+                // Legacy suite uses outdated module name/API assumptions.
+                "HtmlEscapeUtilsTests.swift",
+            ]
+        ),
     ]
 )

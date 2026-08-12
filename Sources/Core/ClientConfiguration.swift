@@ -8,6 +8,8 @@ struct ClientConfiguration: Codable { // Add Codable conformance
     let configurationId: String
     var testRunId: String 
     let testRunName: String
+    let testRunTags: [String]
+    let testRunLinks: [TestRunLinkConfig]
     let certValidation: Bool
     var automaticUpdationLinksToTestCases: Bool
     let mode: String
@@ -35,6 +37,8 @@ struct ClientConfiguration: Codable { // Add Codable conformance
         self.configurationId = properties[AppProperties.CONFIGURATION_ID] ?? "null"
         self.testRunId = properties[AppProperties.TEST_RUN_ID] ?? "null"
         self.testRunName = properties[AppProperties.TEST_RUN_NAME] ?? "null"
+        self.testRunTags = TestRunMetadataParser.parseTags(properties[AppProperties.TEST_RUN_TAGS])
+        self.testRunLinks = TestRunMetadataParser.parseLinks(properties[AppProperties.TEST_RUN_LINKS])
         self.mode = properties[AppProperties.ADAPTER_MODE] ?? "null"
 
         // Parse certValidation, defaulting to true
@@ -58,6 +62,8 @@ struct ClientConfiguration: Codable { // Add Codable conformance
                                  "configurationId=\'\(self.configurationId)\', " +
                                  "testRunId=\'\(self.testRunId)\', " +
                                  "testRunName=\'\(self.testRunName)\', " +
+                                 "testRunTags=\(self.testRunTags), " +
+                                 "testRunLinks=\(self.testRunLinks.count) item(s), " +
                                  "certValidation=\(self.certValidation), " +
                                  "automaticUpdationLinksToTestCases=\(self.automaticUpdationLinksToTestCases), " +
                                  "syncStoragePort=\(self.syncStoragePort), " +
@@ -74,7 +80,8 @@ struct ClientConfiguration: Codable { // Add Codable conformance
     enum CodingKeys: String, CodingKey {
         // Map public names, use private name for token's backing property
         case privateToken_ = "privateToken"
-        case projectId, url, configurationId, testRunId, testRunName, certValidation, automaticUpdationLinksToTestCases, mode
+        case projectId, url, configurationId, testRunId, testRunName, testRunTags, testRunLinks
+        case certValidation, automaticUpdationLinksToTestCases, mode
         case syncStoragePort, syncStoragePath
     }
     
@@ -92,6 +99,8 @@ extension ClientConfiguration: CustomStringConvertible {
                "configurationId=\'\(configurationId)\', " +
                "testRunId=\'\(testRunId)\', " +
                "testRunName=\'\(testRunName)\', " +
+               "testRunTags=\(testRunTags), " +
+               "testRunLinks=\(testRunLinks.count) item(s), " +
                "certValidation=\(certValidation), " +
                "automaticUpdationLinksToTestCases=\(automaticUpdationLinksToTestCases), " +
                "syncStoragePort=\(syncStoragePort), " +
