@@ -45,9 +45,21 @@ class TmsApiClient: ApiClient {
             Self.logger.error("Cannot create test run: Invalid Project ID format \"\(self.clientConfiguration.projectId)\"")
             throw TmsApiClientError.invalidConfiguration("Invalid Project ID format")
         }
-        
-        let model = CreateEmptyTestRunApiModel(projectId: projectId)
-        Self.logger.debug("Creating new test run: \(String(describing: model))")
+
+        let configuredName = clientConfiguration.testRunName
+        let name = (!configuredName.isEmpty && configuredName.lowercased() != "null") ? configuredName : nil
+        let tags = clientConfiguration.testRunTags
+        let links = TestRunMetadataParser.toCreateLinkApiModels(clientConfiguration.testRunLinks)
+
+        let model = CreateEmptyTestRunApiModel(
+            projectId: projectId,
+            name: name,
+            links: links.isEmpty ? nil : links,
+            tags: tags.isEmpty ? nil : tags
+        )
+        Self.logger.debug(
+            "Creating new test run with tags=\(tags) links=\(links.count) item(s)"
+        )
         
         // 1. Create Empty Test Run
         let createResponse: TestRunApiResult = try await withCheckedThrowingContinuation { continuation in
@@ -136,18 +148,36 @@ class TmsApiClient: ApiClient {
         return result
     }
 
-    func updateTestRun(uuid: String, name: String) throws {
-        Self.logger.debug("TmsApiClient: updateTestRun... with uuid: \(uuid), name: \(name)")
+    func updateTestRun(uuid: String, name: String?, tags: [String]?, links: [UpdateLinkApiModel]?) throws {
+        Self.logger.debug(
+            "TmsApiClient: updateTestRun... with uuid: \(uuid), name: \(name ?? "nil"), tags: \(tags?.count ?? 0), links: \(links?.count ?? 0)"
+        )
         
         // Get current test run to preserve other properties
         let currentTestRun = try getTestRun(uuid: uuid)
         
-        // Create a mutable copy and update name
         var updatedTestRun = currentTestRun
-        updatedTestRun.name = name
+        if let name = name, !name.isEmpty, name.lowercased() != "null" {
+            updatedTestRun.name = name
+        }
         
-        // Build update model using Converter
-        let updateModel = Converter.buildUpdateEmptyTestRunApiModel(updatedTestRun)
+        let existingLinks = Converter.buildUpdateLinkApiModels(currentTestRun.links)
+        let mergedTags = TestRunMetadataParser.mergeTags(
+            existing: currentTestRun.tags,
+            incoming: tags ?? []
+        )
+        let mergedLinks = TestRunMetadataParser.mergeLinks(
+            existing: existingLinks,
+            incoming: links ?? []
+        )
+        
+        let updateModel = UpdateEmptyTestRunApiModel(
+            id: updatedTestRun.id,
+            name: updatedTestRun.name,
+            attachments: Converter.buildAssignAttachmentApiModels(updatedTestRun.attachments),
+            links: mergedLinks,
+            tags: mergedTags
+        )
         
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
@@ -167,7 +197,9 @@ class TmsApiClient: ApiClient {
             throw error
         }
         
-        Self.logger.debug("Updated test run \(uuid) name to: \(name)")
+        Self.logger.info(
+            "Updated test run \(uuid): name='\(updateModel.name)', tags=\(mergedTags), links=\(mergedLinks.count) item(s)"
+        )
     }
 
     func completeTestRun(uuid: String) throws {

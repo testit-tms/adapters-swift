@@ -215,7 +215,34 @@ $ xcodebuild test -scheme tests -only-testing:"$(cat tmp/filter.txt)"
 | Mode of automatic creation test cases (**It's optional**). Default value - false. The adapter supports following modes:<br/>true - in this mode, the adapter will create a test case linked to the created autotest (not to the updated autotest)<br/>false - in this mode, the adapter will not create a test case                                                                    | automaticCreationTestCases        | TMS_AUTOMATIC_CREATION_TEST_CASES          | tmsAutomaticCreationTestCases        |
 | Mode of automatic updation links to test cases (**It's optional**). Default value - false. The adapter supports following modes:<br/>true - in this mode, the adapter will update links to test cases<br/>false - in this mode, the adapter will not update link to test cases                                                                                                         | automaticUpdationLinksToTestCases | TMS_AUTOMATIC_UPDATION_LINKS_TO_TEST_CASES | tmsAutomaticUpdationLinksToTestCases |
 | Mode of import type selection when launching autotests (**It's optional**). Default value - true. The adapter supports following modes:<br/>true - in this mode, the adapter will create/update each autotest in real time<br/>false - in this mode, the adapter will create/update multiple autotests                                                                                 | importRealtime                    | TMS_IMPORT_REALTIME                        | tmsImportRealtime                    |
+| Tags for the **test run** (**It's optional**). Comma-separated list or JSON array. Independent from autotest/result tags                                                                                                                                                                                                                                                                  | testRunTags                       | TMS_TEST_RUN_TAGS                          | tmsTestRunTags                       |
+| Links for the **test run** (**It's optional**). JSON array of objects with required `url` and optional `title`, `description`, `type`. Applied on create (mode 2) or merged early for an existing run (mode 0/1), so a CI job URL is visible while the run is still In Progress                                                                                                         | testRunLinks                      | TMS_TEST_RUN_LINKS                         | tmsTestRunLinks                      |
 | Name of the configuration file If it is not provided, it is used default file name (**It's optional**)                                                                                                                                                                                                                                                                                 | -                                 | TMS_CONFIG_FILE                            | tmsConfigFile                        |
+
+#### Test run tags and links
+
+These properties belong to the **test run**, not to an individual autotest:
+
+- `testRunTags` / `TMS_TEST_RUN_TAGS` — `smoke,nightly` or `["smoke","nightly"]`
+- `testRunLinks` / `TMS_TEST_RUN_LINKS` — JSON array, for example:
+
+```json
+[
+  {
+    "url": "https://gitlab.example.com/group/project/-/jobs/12345",
+    "title": "CI Job",
+    "type": "Related"
+  }
+]
+```
+
+Supported link types: `Related`, `BlockedBy`, `Defect`, `Issue`, `Requirement`, `Repository`.  
+If `type` is omitted, the adapter uses `Related`.
+
+Behavior:
+
+- **adapterMode=2** — tags/links are sent in the create test run request.
+- **adapterMode=0 or 1** — tags/links are merged into the existing test run at startup (existing UI/API values are preserved; duplicates by tag name / link URL are skipped).
 
 #### File
 
@@ -228,6 +255,8 @@ configurationId=CONFIGURATION_ID
 adapterMode=ADAPTER_MODE
 testRunId=TEST_RUN_ID
 testRunName=TEST_RUN_NAME
+testRunTags=smoke,nightly
+testRunLinks=[{"url":"https://gitlab.example.com/group/project/-/jobs/12345","title":"CI Job","type":"Related"}]
 automaticCreationTestCases=AUTOMATIC_CREATION_TEST_CASES
 
 ```
