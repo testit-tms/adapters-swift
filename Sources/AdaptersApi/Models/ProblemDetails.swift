@@ -58,8 +58,12 @@ public struct ProblemDetails: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(status, forKey: .status)
         try container.encodeIfPresent(detail, forKey: .detail)
         try container.encodeIfPresent(instance, forKey: .instance)
-        var additionalPropertiesContainer = encoder.container(keyedBy: String.self)
-        try additionalPropertiesContainer.encodeMap(additionalProperties)
+        // Use JSONStringKey, not String.self: Extensions.swift is excluded and String: CodingKey is unavailable.
+        var additionalPropertiesContainer = encoder.container(keyedBy: JSONStringKey.self)
+        let keyedAdditionalProperties = Dictionary(
+            uniqueKeysWithValues: additionalProperties.map { (JSONStringKey($0.key), $0.value) }
+        )
+        try additionalPropertiesContainer.encodeMap(keyedAdditionalProperties)
     }
 
     // Decodable protocol methods
@@ -78,8 +82,14 @@ public struct ProblemDetails: Codable, JSONEncodable, Hashable {
         nonAdditionalPropertyKeys.insert("status")
         nonAdditionalPropertyKeys.insert("detail")
         nonAdditionalPropertyKeys.insert("instance")
-        let additionalPropertiesContainer = try decoder.container(keyedBy: String.self)
-        additionalProperties = try additionalPropertiesContainer.decodeMap(AnyCodable.self, excludedKeys: nonAdditionalPropertyKeys)
+        let additionalPropertiesContainer = try decoder.container(keyedBy: JSONStringKey.self)
+        let decodedAdditionalProperties = try additionalPropertiesContainer.decodeMap(
+            AnyCodable.self,
+            excludedKeys: Set(nonAdditionalPropertyKeys.map(JSONStringKey.init))
+        )
+        additionalProperties = Dictionary(
+            uniqueKeysWithValues: decodedAdditionalProperties.map { ($0.key.stringValue, $0.value) }
+        )
     }
 }
 

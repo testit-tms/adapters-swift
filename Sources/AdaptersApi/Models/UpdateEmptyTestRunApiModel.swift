@@ -19,7 +19,7 @@ public struct UpdateEmptyTestRunApiModel: Codable, JSONEncodable, Hashable {
     public var name: String
     /** Test run description */
     public var description: String?
-    /** Test run launch source                Once launch source is specified it cannot be updated */
+    /** Test run launch source              Once launch source is specified it cannot be updated */
     public var launchSource: String?
     /** Collection of attachments related to the test run */
     public var attachments: [AssignAttachmentApiModel]?

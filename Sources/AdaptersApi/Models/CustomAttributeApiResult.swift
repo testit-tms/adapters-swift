@@ -14,7 +14,7 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
 
     /** Unique ID of the attribute */
     public var id: UUID
-    /** Collection of the attribute options      Available for attributes of type `options` and `multiple options` only */
+    /** Collection of the attribute options   Available for attributes of type `options` and `multiple options` only */
     public var options: [CustomAttributeOptionApiResult]
     /** Type of the attribute */
     public var type: CustomAttributeType

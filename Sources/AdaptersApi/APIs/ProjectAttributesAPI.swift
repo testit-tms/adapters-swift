@@ -39,8 +39,8 @@ open class ProjectAttributesAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter projectId: (path)  
      - parameter customAttributePutModel: (body)  (optional)
      - returns: RequestBuilder<Void> 
@@ -80,7 +80,7 @@ open class ProjectAttributesAPI {
      - parameter completion: completion handler to receive the data and the error objects
      */
     @discardableResult
-    open class func adaptersProjectsProjectIdAttributesSearchPost(projectId: UUID, skip: Int? = nil, take: Int? = nil, orderBy: String? = nil, searchField: String? = nil, searchValue: String? = nil, projectAttributesFilterModel: ProjectAttributesFilterModel? = nil, apiResponseQueue: DispatchQueue = AdaptersApiAPI.apiResponseQueue, completion: @escaping ((_ data: [CustomAttributeGetModel]?, _ error: Error?) -> Void)) -> RequestTask {
+    open class func adaptersProjectsProjectIdAttributesSearchPost(projectId: UUID, skip: Int? = nil, take: Int? = nil, orderBy: String? = nil, searchField: String? = nil, searchValue: String? = nil, projectAttributesFilterModel: ProjectAttributesFilterModel? = nil, apiResponseQueue: DispatchQueue = AdaptersApiAPI.apiResponseQueue, completion: @escaping ((_ data: [CustomAttributeModel]?, _ error: Error?) -> Void)) -> RequestTask {
         return adaptersProjectsProjectIdAttributesSearchPostWithRequestBuilder(projectId: projectId, skip: skip, take: take, orderBy: orderBy, searchField: searchField, searchValue: searchValue, projectAttributesFilterModel: projectAttributesFilterModel).execute(apiResponseQueue) { result in
             switch result {
             case let .success(response):
@@ -98,8 +98,8 @@ open class ProjectAttributesAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - responseHeaders: [Pagination-Skip(Int), Pagination-Take(Int), Pagination-Pages(Int), Pagination-Total-Items(Int)]
      - parameter projectId: (path)  
      - parameter skip: (query) Amount of items to be skipped (offset) (optional)
@@ -108,9 +108,9 @@ open class ProjectAttributesAPI {
      - parameter searchField: (query) Property name for searching (optional)
      - parameter searchValue: (query) Value for searching (optional)
      - parameter projectAttributesFilterModel: (body)  (optional)
-     - returns: RequestBuilder<[CustomAttributeGetModel]> 
+     - returns: RequestBuilder<[CustomAttributeModel]> 
      */
-    open class func adaptersProjectsProjectIdAttributesSearchPostWithRequestBuilder(projectId: UUID, skip: Int? = nil, take: Int? = nil, orderBy: String? = nil, searchField: String? = nil, searchValue: String? = nil, projectAttributesFilterModel: ProjectAttributesFilterModel? = nil) -> RequestBuilder<[CustomAttributeGetModel]> {
+    open class func adaptersProjectsProjectIdAttributesSearchPostWithRequestBuilder(projectId: UUID, skip: Int? = nil, take: Int? = nil, orderBy: String? = nil, searchField: String? = nil, searchValue: String? = nil, projectAttributesFilterModel: ProjectAttributesFilterModel? = nil) -> RequestBuilder<[CustomAttributeModel]> {
         var localVariablePath = "/adapters/projects/{projectId}/attributes/search"
         let projectIdPreEscape = "\(APIHelper.mapValueToPathItem(projectId))"
         let projectIdPostEscape = projectIdPreEscape.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
@@ -133,7 +133,7 @@ open class ProjectAttributesAPI {
 
         let localVariableHeaderParameters = APIHelper.rejectNilHeaders(localVariableNillableHeaders)
 
-        let localVariableRequestBuilder: RequestBuilder<[CustomAttributeGetModel]>.Type = AdaptersApiAPI.requestBuilderFactory.getBuilder()
+        let localVariableRequestBuilder: RequestBuilder<[CustomAttributeModel]>.Type = AdaptersApiAPI.requestBuilderFactory.getBuilder()
 
         return localVariableRequestBuilder.init(method: "POST", URLString: (localVariableUrlComponents?.string ?? localVariableURLString), parameters: localVariableParameters, headers: localVariableHeaderParameters, requiresAuthentication: true)
     }

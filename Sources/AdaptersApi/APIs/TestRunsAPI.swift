@@ -38,8 +38,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - returns: RequestBuilder<Void> 
      */
@@ -90,8 +90,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - returns: RequestBuilder<TestRunApiResult> 
      */
@@ -143,8 +143,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - parameter manualRerunSelectTestResultsApiModel: (body)  (optional)
      - returns: RequestBuilder<ManualRerunApiResult> 
@@ -196,8 +196,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - returns: RequestBuilder<Void> 
      */
@@ -248,8 +248,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - returns: RequestBuilder<Void> 
      */
@@ -301,8 +301,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - parameter autoTestResultsForTestRunModel: (body)  (optional)
      - returns: RequestBuilder<[UUID]> 
@@ -354,8 +354,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter createEmptyTestRunApiModel: (body)  (optional)
      - returns: RequestBuilder<TestRunApiResult> 
      */
@@ -403,8 +403,8 @@ open class TestRunsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter updateEmptyTestRunApiModel: (body)  (optional)
      - returns: RequestBuilder<Void> 
      */

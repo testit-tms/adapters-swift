@@ -123,6 +123,7 @@ public struct LinkEntity {
 
 extension LinkEntity {
     func toLinkItem() -> LinkItem {
+        // Adapters API requires LinkType; default to Related when annotation type is missing or unknown.
         let linkType = LinkType(rawValue: self.type.rawValue) ?? .related
 
         return LinkItem(title: self.title, url: self.url,

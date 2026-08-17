@@ -7,6 +7,7 @@ enum Converter {
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TestItAdapter", category: "Converter")
     private static let defaultLinkType: AdaptersApi.LinkType = .related
 
+    // Adapters API LinkType is required; use Related when the source link type is missing or invalid.
     private static func toApiLinkType(from rawValue: String) -> AdaptersApi.LinkType {
         guard let linkType = AdaptersApi.LinkType(rawValue: rawValue) else {
             logger.warning("Warning: Could not convert LinkType rawValue: \(rawValue). Fallback to Related.")
@@ -391,14 +392,14 @@ enum Converter {
 
     static func labelsConvert(_ labels: [LabelShortModel]) -> [LabelApiModel] {
         return labels.map { label in
-            LabelApiModel(name: label.name, globalId: label.globalId)
+            LabelApiModel(name: label.name)
         }
     }
 
     static func labelsPostConvert(_ labels: [Label]) -> [LabelApiModel] {
          return labels.compactMap { label -> LabelApiModel? in
             guard let name = label.name else { return nil }
-            return LabelApiModel(name: name, globalId: 0)
+            return LabelApiModel(name: name)
         }
     }
 
