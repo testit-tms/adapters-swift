@@ -17,7 +17,7 @@ XCTest support only for now
 
 1. For current versions, see the releases tab. 
 2. Starting with 5.2, we have added a TMS postscript, which means that the utility is compatible with a specific enterprise version. 
-3. If you are in doubt about which version to use, check with the support staff. support@yoonion.ru
+3. If you are in doubt about which version to use, check with the support staff: support@testit.software or https://help.testit.software/help
 
 ## What's new in 1.0.0?
 
