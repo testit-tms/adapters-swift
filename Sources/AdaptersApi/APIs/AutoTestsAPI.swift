@@ -38,8 +38,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter autoTestCreateApiModel: (body)  (optional)
      - returns: RequestBuilder<[AutoTestApiResult]> 
      */
@@ -87,8 +87,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter autoTestUpdateApiModel: (body)  (optional)
      - returns: RequestBuilder<Void> 
      */
@@ -160,8 +160,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - responseHeaders: [Pagination-Skip(Int), Pagination-Take(Int), Pagination-Pages(Int), Pagination-Total-Items(Int)]
      - parameter projectId: (query) Project internal ID (optional)
      - parameter externalId: (query) Autotest external ID (optional)
@@ -264,8 +264,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path) Internal (UUID) or global (integer) identifier 
      - returns: RequestBuilder<AutoTestApiResult> 
      */
@@ -318,8 +318,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - parameter operation: (body)  (optional)
      - returns: RequestBuilder<Void> 
@@ -372,8 +372,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path) Internal (UUID) or global (integer) identifier 
      - parameter workItemId: (query) Internal (UUID) or global (integer) identifier (optional)
      - returns: RequestBuilder<Void> 
@@ -430,8 +430,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path) Internal (UUID) or global (integer) identifier 
      - parameter isDeleted: (query)  (optional)
      - parameter isWorkItemDeleted: (query)  (optional, default to false)
@@ -489,8 +489,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path) Internal (UUID) or global (integer) identifier 
      - parameter workItemIdApiModel: (body)  (optional)
      - returns: RequestBuilder<Void> 
@@ -542,8 +542,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter autoTestCreateApiModel: (body)  (optional)
      - returns: RequestBuilder<AutoTestApiResult> 
      */
@@ -591,8 +591,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter autoTestUpdateApiModel: (body)  (optional)
      - returns: RequestBuilder<Void> 
      */
@@ -645,8 +645,8 @@ open class AutoTestsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - responseHeaders: [Pagination-Skip(Int), Pagination-Take(Int), Pagination-Pages(Int), Pagination-Total-Items(Int)]
      - parameter skip: (query) Amount of items to be skipped (offset) (optional)
      - parameter take: (query) Amount of items to be taken (limit) (optional)

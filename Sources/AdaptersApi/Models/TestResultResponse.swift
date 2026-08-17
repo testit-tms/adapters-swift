@@ -24,6 +24,7 @@ public struct TestResultResponse: Codable, JSONEncodable, Hashable {
     public var attachments: [AttachmentApiResult]?
     public var autoTestId: UUID?
     public var configurationId: UUID
+    public var testPointId: UUID
     public var durationInMs: Int64?
     public var traces: String?
     public var failureType: String?
@@ -36,7 +37,7 @@ public struct TestResultResponse: Codable, JSONEncodable, Hashable {
     public var parameters: [String: String]?
     public var properties: [String: String]?
 
-    public init(id: UUID, stepComments: [StepCommentApiModel]? = nil, failureClassIds: [UUID], outcome: TestResultOutcome? = nil, status: TestStatusApiResult? = nil, comment: String? = nil, links: [LinkApiResult]? = nil, stepResults: [StepResultApiModel]? = nil, attachments: [AttachmentApiResult]? = nil, autoTestId: UUID? = nil, configurationId: UUID, durationInMs: Int64? = nil, traces: String? = nil, failureType: String? = nil, message: String? = nil, testRunId: UUID, autoTest: AutoTest? = nil, autoTestStepResults: [AutoTestStepResult]? = nil, setupResults: [AutoTestStepResult]? = nil, teardownResults: [AutoTestStepResult]? = nil, parameters: [String: String]? = nil, properties: [String: String]? = nil) {
+    public init(id: UUID, stepComments: [StepCommentApiModel]? = nil, failureClassIds: [UUID], outcome: TestResultOutcome? = nil, status: TestStatusApiResult? = nil, comment: String? = nil, links: [LinkApiResult]? = nil, stepResults: [StepResultApiModel]? = nil, attachments: [AttachmentApiResult]? = nil, autoTestId: UUID? = nil, configurationId: UUID, testPointId: UUID, durationInMs: Int64? = nil, traces: String? = nil, failureType: String? = nil, message: String? = nil, testRunId: UUID, autoTest: AutoTest? = nil, autoTestStepResults: [AutoTestStepResult]? = nil, setupResults: [AutoTestStepResult]? = nil, teardownResults: [AutoTestStepResult]? = nil, parameters: [String: String]? = nil, properties: [String: String]? = nil) {
         self.id = id
         self.stepComments = stepComments
         self.failureClassIds = failureClassIds
@@ -48,6 +49,7 @@ public struct TestResultResponse: Codable, JSONEncodable, Hashable {
         self.attachments = attachments
         self.autoTestId = autoTestId
         self.configurationId = configurationId
+        self.testPointId = testPointId
         self.durationInMs = durationInMs
         self.traces = traces
         self.failureType = failureType
@@ -73,6 +75,7 @@ public struct TestResultResponse: Codable, JSONEncodable, Hashable {
         case attachments
         case autoTestId
         case configurationId
+        case testPointId
         case durationInMs
         case traces
         case failureType
@@ -101,6 +104,7 @@ public struct TestResultResponse: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(attachments, forKey: .attachments)
         try container.encodeIfPresent(autoTestId, forKey: .autoTestId)
         try container.encode(configurationId, forKey: .configurationId)
+        try container.encode(testPointId, forKey: .testPointId)
         try container.encodeIfPresent(durationInMs, forKey: .durationInMs)
         try container.encodeIfPresent(traces, forKey: .traces)
         try container.encodeIfPresent(failureType, forKey: .failureType)

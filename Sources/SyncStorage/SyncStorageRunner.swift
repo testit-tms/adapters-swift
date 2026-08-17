@@ -50,6 +50,7 @@ final class SyncStorageRunner {
     
     private var process: Process?
     private var outputPipe: Pipe?
+    private let verboseLogs: Bool
     
     private let apiResponseQueue = DispatchQueue.global(qos: .utility)
     
@@ -72,6 +73,7 @@ final class SyncStorageRunner {
         self.projectId = projectId
         self.configuredPath = syncStoragePath
         self.workerPID = "worker-\(ProcessInfo.processInfo.processIdentifier)-\(Int64(Date().timeIntervalSince1970 * 1000))"
+        self.verboseLogs = Self.isVerboseLoggingEnabled()
         
         // Configure generated API client.
         SyncStorageClientAPI.basePath = "http://127.0.0.1:\(port)"
@@ -100,15 +102,25 @@ final class SyncStorageRunner {
             process.arguments = args
             process.currentDirectoryURL = URL(fileURLWithPath: (executablePath as NSString).deletingLastPathComponent)
             
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = pipe
+            if verboseLogs {
+                // Opt-in only (TMS_SYNC_STORAGE_VERBOSE=true): forward subprocess stdout/stderr to os.log.
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                process.standardError = pipe
+                self.outputPipe = pipe
+            } else {
+                // Default: discard sync-storage output so it does not pollute test runner logs.
+                process.standardOutput = FileHandle.nullDevice
+                process.standardError = FileHandle.nullDevice
+                self.outputPipe = nil
+            }
             
             self.process = process
-            self.outputPipe = pipe
             
             try process.run()
-            //readOutputAsync(from: pipe)
+            if verboseLogs, let pipe = outputPipe {
+                readOutputAsync(from: pipe)
+            }
             
             guard waitForStartup() else {
                 Self.logger.error("SyncStorage failed to start within timeout")
@@ -134,6 +146,8 @@ final class SyncStorageRunner {
         
         guard !isExternal else { return }
         guard let process else { return }
+        
+        outputPipe?.fileHandleForReading.readabilityHandler = nil
         
         if process.isRunning {
             process.terminate()
@@ -388,6 +402,18 @@ final class SyncStorageRunner {
         #endif
     }
     
+    // Subprocess logs are off by default; set TMS_SYNC_STORAGE_VERBOSE=true to forward them to os.log.
+    private static func isVerboseLoggingEnabled() -> Bool {
+        guard let value = ProcessInfo.processInfo.environment["TMS_SYNC_STORAGE_VERBOSE"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased(),
+              !value.isEmpty
+        else {
+            return false
+        }
+        return value == "true" || value == "1" || value == "yes"
+    }
+
     private func readOutputAsync(from pipe: Pipe) {
         let handle = pipe.fileHandleForReading
         handle.readabilityHandler = { fileHandle in

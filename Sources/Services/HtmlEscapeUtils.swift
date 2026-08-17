@@ -69,6 +69,7 @@ import AdaptersApi
 // Extend API models to support HTML escaping
 extension AutoTestUpdateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        // Preserve externalId as-is: HTML escaping turns "<test>" into "&lt;test&gt;" and creates duplicate autotests.
         let originalExternalId = self.externalId
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
         self.namespace = HtmlEscapeUtils.escapeHtmlTags(self.namespace)
@@ -116,12 +117,14 @@ extension AutoTestUpdateApiModel: HtmlEscapable {
             }
             self.links = linksArray
         }
+        // Restore after escapeHtmlProperties(); only descriptive fields should be escaped.
         self.externalId = originalExternalId
     }
 }
 
 extension AutoTestCreateApiModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        // Preserve externalId as-is: HTML escaping turns "<test>" into "&lt;test&gt;" and creates duplicate autotests.
         let originalExternalId = self.externalId
         self.name = HtmlEscapeUtils.escapeHtmlTags(self.name) ?? self.name
         self.namespace = HtmlEscapeUtils.escapeHtmlTags(self.namespace)
@@ -169,6 +172,7 @@ extension AutoTestCreateApiModel: HtmlEscapable {
             }
             self.links = linksArray
         }
+        // Restore after escapeHtmlProperties(); only descriptive fields should be escaped.
         self.externalId = originalExternalId
     }
 }
@@ -229,6 +233,7 @@ extension LinkPutModel: HtmlEscapable {
 
 extension AutoTestResultsForTestRunModel: HtmlEscapable {
     public mutating func escapeHtmlProperties() {
+        // Preserve autoTestExternalId as-is: must match the autotest externalId in TMS exactly.
         let originalAutoTestExternalId = self.autoTestExternalId
         self.message = HtmlEscapeUtils.escapeHtmlTags(self.message)
         self.traces = HtmlEscapeUtils.escapeHtmlTags(self.traces)
@@ -264,6 +269,7 @@ extension AutoTestResultsForTestRunModel: HtmlEscapable {
             }
             self.links = links
         }
+        // Restore after escapeHtmlProperties(); must match autotest externalId in TMS.
         self.autoTestExternalId = originalAutoTestExternalId
     }
 }

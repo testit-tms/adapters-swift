@@ -1,7 +1,8 @@
 // ExtensionsPatched.swift
 //
-// Local replacement for generated `Extensions.swift`.
-//
+// Local replacement for generated Extensions.swift (see Package.swift exclude list).
+// Do NOT add `extension String: CodingKey` here: it breaks Swift 6 builds.
+// Use JSONStringKey in ProblemDetails / ValidationProblemDetails instead of keyedBy: String.self.
 
 import Foundation
 #if canImport(FoundationNetworking)
@@ -106,24 +107,21 @@ extension JSONEncodable where Self: Encodable {
     }
 }
 
-extension String: CodingKey {
+/// Dynamic JSON key for OpenAPI additionalProperties.
+/// Required because Extensions.swift is excluded and String: CodingKey must not be declared here.
+public struct JSONStringKey: CodingKey, Hashable {
+    public var stringValue: String
 
-    public var stringValue: String {
-        return self
+    public init(_ string: String) {
+        self.stringValue = string
     }
 
     public init?(stringValue: String) {
-        self.init(stringLiteral: stringValue)
+        self.stringValue = stringValue
     }
 
-    public var intValue: Int? {
-        return nil
-    }
-
-    public init?(intValue: Int) {
-        return nil
-    }
-
+    public var intValue: Int? { nil }
+    public init?(intValue: Int) { return nil }
 }
 
 extension KeyedEncodingContainerProtocol {

@@ -36,8 +36,8 @@ open class AttachmentsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter files: (form)  (optional)
      - returns: RequestBuilder<[AttachmentModel]> 
      */
@@ -95,8 +95,8 @@ open class AttachmentsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - parameter width: (query) Width of the result image (optional)
      - parameter height: (query) Height of the result image (optional)
@@ -155,13 +155,13 @@ open class AttachmentsAPI {
     /**
      Upload new attachment file
      - POST /adapters/attachments
-     - File size is restricted to 1 GB (1 073 741 824 bytes)
+     - File size is restricted to 50 MB (52 428 800 bytes)
      - API Key:
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter file: (form)  (optional)
      - returns: RequestBuilder<AttachmentModel> 
      */

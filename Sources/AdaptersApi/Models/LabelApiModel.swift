@@ -15,17 +15,13 @@ public struct LabelApiModel: Codable, JSONEncodable, Hashable {
     static let nameRule = StringRule(minLength: 1, maxLength: nil, pattern: nil)
     /** Name of the label */
     public var name: String
-    /** Global ID of the label */
-    public var globalId: Int64
 
-    public init(name: String, globalId: Int64) {
+    public init(name: String) {
         self.name = name
-        self.globalId = globalId
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case name
-        case globalId
     }
 
     // Encodable protocol methods
@@ -33,7 +29,6 @@ public struct LabelApiModel: Codable, JSONEncodable, Hashable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
-        try container.encode(globalId, forKey: .globalId)
     }
 }
 

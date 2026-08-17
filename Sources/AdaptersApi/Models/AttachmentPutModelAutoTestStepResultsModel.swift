@@ -29,7 +29,7 @@ public struct AttachmentPutModelAutoTestStepResultsModel: Codable, JSONEncodable
     public var outcome: AvailableTestResultOutcome?
     /** Nested step results. The maximum nesting level is 15. */
     public var stepResults: [AttachmentPutModelAutoTestStepResultsModel]?
-    /** /// <summary>  Specifies an attachment GUID. Multiple values can be sent.  </summary> */
+    /** /// <summary> Specifies an attachment GUID. Multiple values can be sent. </summary> */
     public var attachments: [AttachmentPutModel]?
     /** \"<b>parameter</b>\": \"<b>value</b>\" pair with arbitrary custom parameters. Multiple parameters can be sent. */
     public var parameters: [String: String]?

@@ -44,8 +44,8 @@ open class ProjectWorkItemsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - responseHeaders: [Pagination-Skip(Int), Pagination-Take(Int), Pagination-Pages(Int), Pagination-Total-Items(Int)]
      - parameter projectId: (path) Internal (UUID) or global (integer) identifier 
      - parameter skip: (query) Amount of items to be skipped (offset) (optional)

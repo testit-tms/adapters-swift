@@ -36,8 +36,8 @@ open class WorkflowsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path)  
      - returns: RequestBuilder<WorkflowApiResult> 
      */

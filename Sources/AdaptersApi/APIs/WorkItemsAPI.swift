@@ -40,8 +40,8 @@ open class WorkItemsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter id: (path) Internal (UUID) or global (integer) identifier 
      - parameter versionId: (query)  (optional)
      - parameter versionNumber: (query)  (optional)
@@ -98,8 +98,8 @@ open class WorkItemsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - parameter createWorkItemApiModel: (body)  (optional)
      - returns: RequestBuilder<WorkItemApiResult> 
      */
@@ -152,8 +152,8 @@ open class WorkItemsAPI {
        - type: apiKey Authorization (HEADER)
        - name: PrivateToken
      - API Key:
-       - type: apiKey session 
-       - name: Cookies
+       - type: apiKey backoffice 
+       - name: Identity.Application
      - responseHeaders: [Pagination-Skip(Int), Pagination-Take(Int), Pagination-Pages(Int), Pagination-Total-Items(Int)]
      - parameter skip: (query) Amount of items to be skipped (offset) (optional)
      - parameter take: (query) Amount of items to be taken (limit) (optional)
