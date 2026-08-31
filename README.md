@@ -290,6 +290,7 @@ TestItContextBuilder()
         description: "TestDescription", type: LinkEntityType.related)])
     .Parameters(["version": "1.0", "env": "staging"])
     .Labels([LabelEntity(name: "TestLabel")])
+    .Layer(TestLayers.API)
     // test result's attachments
     .Attachments([filePath!])
     .build(self)
@@ -303,6 +304,7 @@ Description of Metadata builder methods:
 - `Title` - autotest name specified in the autotest card. If not specified, the name from the displayName method is used
 - `Description` - autotest description specified in the autotest card
 - `Labels` - labels listed in the autotest card
+- `Layer` - test pyramid layer on the autotest card (source **Run** in TMS). Use `TestLayers` constants or any custom string. See [docs/autotest-layer.md](docs/autotest-layer.md)
 - `Tags` - tags listed in the autotest card
 - `Links` - links listed in the autotest card
 - `Classname` - name of the classname (TODO)

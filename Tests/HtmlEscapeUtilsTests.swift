@@ -304,7 +304,8 @@ class HtmlEscapeUtilsTests: XCTestCase {
         var model = AutoTestUpdateApiModel(
             projectId: projectId,
             externalId: "<test>",
-            name: "<b>Name</b>"
+            name: "<b>Name</b>",
+            resetLayer: false
         )
 
         model.escapeHtmlProperties()

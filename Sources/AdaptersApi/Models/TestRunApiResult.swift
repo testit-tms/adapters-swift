@@ -16,6 +16,12 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
     public var id: UUID
     /** Test run name */
     public var name: String
+    /** Test run description */
+    public var description: String?
+    /** Test run launch source              Once launch source is specified it cannot be updated. */
+    public var launchSource: String?
+    /** Project unique identifier              This property is used to link test run with project. */
+    public var projectId: UUID
     /** Test run state */
     @available(*, deprecated, message: "This property is deprecated.")
     public var stateName: TestRunState
@@ -28,9 +34,12 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
     /** Collection of tags associated with the test run */
     public var tags: [String]
 
-    public init(id: UUID, name: String, stateName: TestRunState, status: TestStatusApiResult, attachments: [AttachmentApiResult], links: [LinkApiResult], tags: [String]) {
+    public init(id: UUID, name: String, description: String? = nil, launchSource: String? = nil, projectId: UUID, stateName: TestRunState, status: TestStatusApiResult, attachments: [AttachmentApiResult], links: [LinkApiResult], tags: [String]) {
         self.id = id
         self.name = name
+        self.description = description
+        self.launchSource = launchSource
+        self.projectId = projectId
         self.stateName = stateName
         self.status = status
         self.attachments = attachments
@@ -41,6 +50,9 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case id
         case name
+        case description
+        case launchSource
+        case projectId
         case stateName
         case status
         case attachments
@@ -54,6 +66,9 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(launchSource, forKey: .launchSource)
+        try container.encode(projectId, forKey: .projectId)
         try container.encode(stateName, forKey: .stateName)
         try container.encode(status, forKey: .status)
         try container.encode(attachments, forKey: .attachments)

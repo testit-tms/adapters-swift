@@ -17,6 +17,7 @@ public struct TestItContext {
     var labels: [Label]?
     var tags: [String]?
     var externalKey: String?
+    var layer: String?
 }
 
 public class TestItContextBuilder {
@@ -94,6 +95,12 @@ public class TestItContextBuilder {
 
     public func ExternalKey(_ externalKey: String?) -> TestItContextBuilder {
         context.externalKey = externalKey
+        return self
+    }
+
+    /// Test pyramid layer for the autotest card (source Run in TMS). Omit when not needed.
+    public func Layer(_ layer: String?) -> TestItContextBuilder {
+        context.layer = layer
         return self
     }
 

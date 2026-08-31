@@ -39,7 +39,8 @@ class HttpWriter: Writer {
                     AutoTestUpdateApiModel = Converter.autoTestApiResultToAutoTestUpdateApiModel(
                         autoTestApiResult: existingAutotest,
                         links: Converter.convertPutLinks(testResultCommon.linkItems),
-                        isFlaky: false
+                        isFlaky: false,
+                        layerName: testResultCommon.layer
                     )!
                 } else {
                     guard let projectId = UUID(uuidString: configuration.projectId) else {

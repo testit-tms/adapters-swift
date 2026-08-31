@@ -64,3 +64,4 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 Package.resolved
 .swiftpm
+.user/

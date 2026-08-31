@@ -34,6 +34,10 @@ public struct AutoTestUpdateApiModel: Codable, JSONEncodable, Hashable {
     public var description: String?
     /** Indicates if the autotest is marked as flaky */
     public var isFlaky: Bool?
+    /** Layer of the autotest. Assigns layer by rules if omitted. */
+    public var layer: LayerApiModel?
+    /** Indicates if the autotest layer should be reset. */
+    public var resetLayer: Bool
     /** Collection of the autotest steps */
     public var steps: [AutoTestStepApiModel]?
     /** Collection of the autotest setup steps */
@@ -47,7 +51,7 @@ public struct AutoTestUpdateApiModel: Codable, JSONEncodable, Hashable {
     /** Collection of the autotest tags */
     public var tags: [String]?
 
-    public init(id: UUID? = nil, projectId: UUID, externalId: String, externalKey: String? = nil, name: String, namespace: String? = nil, classname: String? = nil, title: String? = nil, description: String? = nil, isFlaky: Bool? = nil, steps: [AutoTestStepApiModel]? = nil, setup: [AutoTestStepApiModel]? = nil, teardown: [AutoTestStepApiModel]? = nil, labels: [LabelApiModel]? = nil, links: [LinkUpdateApiModel]? = nil, tags: [String]? = nil) {
+    public init(id: UUID? = nil, projectId: UUID, externalId: String, externalKey: String? = nil, name: String, namespace: String? = nil, classname: String? = nil, title: String? = nil, description: String? = nil, isFlaky: Bool? = nil, layer: LayerApiModel? = nil, resetLayer: Bool, steps: [AutoTestStepApiModel]? = nil, setup: [AutoTestStepApiModel]? = nil, teardown: [AutoTestStepApiModel]? = nil, labels: [LabelApiModel]? = nil, links: [LinkUpdateApiModel]? = nil, tags: [String]? = nil) {
         self.id = id
         self.projectId = projectId
         self.externalId = externalId
@@ -58,6 +62,8 @@ public struct AutoTestUpdateApiModel: Codable, JSONEncodable, Hashable {
         self.title = title
         self.description = description
         self.isFlaky = isFlaky
+        self.layer = layer
+        self.resetLayer = resetLayer
         self.steps = steps
         self.setup = setup
         self.teardown = teardown
@@ -77,6 +83,8 @@ public struct AutoTestUpdateApiModel: Codable, JSONEncodable, Hashable {
         case title
         case description
         case isFlaky
+        case layer
+        case resetLayer
         case steps
         case setup
         case teardown
@@ -99,6 +107,8 @@ public struct AutoTestUpdateApiModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(title, forKey: .title)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(isFlaky, forKey: .isFlaky)
+        try container.encodeIfPresent(layer, forKey: .layer)
+        try container.encode(resetLayer, forKey: .resetLayer)
         try container.encodeIfPresent(steps, forKey: .steps)
         try container.encodeIfPresent(setup, forKey: .setup)
         try container.encodeIfPresent(teardown, forKey: .teardown)
