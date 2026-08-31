@@ -26,11 +26,13 @@ public struct AutoTestApiResult: Codable, JSONEncodable, Hashable {
     public var isFlaky: Bool
     public var externalKey: String?
     public var globalId: Int64
+    /** Model of auto test layer for use in responses. */
+    public var layer: LayerApiResult?
     public var links: [LinkApiResult]?
     public var labels: [LabelApiResult]?
     public var tags: [String]?
 
-    public init(id: UUID, projectId: UUID, externalId: String? = nil, name: String, namespace: String? = nil, classname: String? = nil, steps: [AutoTestStepApiResult]? = nil, setup: [AutoTestStepApiResult]? = nil, teardown: [AutoTestStepApiResult]? = nil, title: String? = nil, description: String? = nil, isFlaky: Bool, externalKey: String? = nil, globalId: Int64, links: [LinkApiResult]? = nil, labels: [LabelApiResult]? = nil, tags: [String]? = nil) {
+    public init(id: UUID, projectId: UUID, externalId: String? = nil, name: String, namespace: String? = nil, classname: String? = nil, steps: [AutoTestStepApiResult]? = nil, setup: [AutoTestStepApiResult]? = nil, teardown: [AutoTestStepApiResult]? = nil, title: String? = nil, description: String? = nil, isFlaky: Bool, externalKey: String? = nil, globalId: Int64, layer: LayerApiResult? = nil, links: [LinkApiResult]? = nil, labels: [LabelApiResult]? = nil, tags: [String]? = nil) {
         self.id = id
         self.projectId = projectId
         self.externalId = externalId
@@ -45,6 +47,7 @@ public struct AutoTestApiResult: Codable, JSONEncodable, Hashable {
         self.isFlaky = isFlaky
         self.externalKey = externalKey
         self.globalId = globalId
+        self.layer = layer
         self.links = links
         self.labels = labels
         self.tags = tags
@@ -65,6 +68,7 @@ public struct AutoTestApiResult: Codable, JSONEncodable, Hashable {
         case isFlaky
         case externalKey
         case globalId
+        case layer
         case links
         case labels
         case tags
@@ -88,6 +92,7 @@ public struct AutoTestApiResult: Codable, JSONEncodable, Hashable {
         try container.encode(isFlaky, forKey: .isFlaky)
         try container.encodeIfPresent(externalKey, forKey: .externalKey)
         try container.encode(globalId, forKey: .globalId)
+        try container.encodeIfPresent(layer, forKey: .layer)
         try container.encodeIfPresent(links, forKey: .links)
         try container.encodeIfPresent(labels, forKey: .labels)
         try container.encodeIfPresent(tags, forKey: .tags)

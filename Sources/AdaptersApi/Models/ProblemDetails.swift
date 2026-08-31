@@ -58,7 +58,6 @@ public struct ProblemDetails: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(status, forKey: .status)
         try container.encodeIfPresent(detail, forKey: .detail)
         try container.encodeIfPresent(instance, forKey: .instance)
-        // Use JSONStringKey, not String.self: Extensions.swift is excluded and String: CodingKey is unavailable.
         var additionalPropertiesContainer = encoder.container(keyedBy: JSONStringKey.self)
         let keyedAdditionalProperties = Dictionary(
             uniqueKeysWithValues: additionalProperties.map { (JSONStringKey($0.key), $0.value) }

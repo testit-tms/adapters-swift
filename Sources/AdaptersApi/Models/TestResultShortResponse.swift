@@ -16,6 +16,8 @@ public struct TestResultShortResponse: Codable, JSONEncodable, Hashable {
     public var id: UUID
     /** Name of autotest represented by the test result */
     public var name: String
+    /** Global ID of autotest represented by the test result */
+    public var autotestGlobalId: Int64
     /** External ID of autotest represented by the test result */
     public var autotestExternalId: String?
     /** Tags of the autotest represented by the test result */
@@ -43,9 +45,10 @@ public struct TestResultShortResponse: Codable, JSONEncodable, Hashable {
     /** Run count */
     public var rerunCompletedCount: Int
 
-    public init(id: UUID, name: String, autotestExternalId: String? = nil, autoTestTags: [String], testRunId: UUID, configurationId: UUID, configurationName: String, outcome: String? = nil, status: TestStatusApiResult, resultReasons: [AutoTestResultReasonShort], comment: String? = nil, duration: Int64? = nil, links: [TestResultLinkApiResult], attachments: [AttachmentApiResult], rerunCompletedCount: Int) {
+    public init(id: UUID, name: String, autotestGlobalId: Int64, autotestExternalId: String? = nil, autoTestTags: [String], testRunId: UUID, configurationId: UUID, configurationName: String, outcome: String? = nil, status: TestStatusApiResult, resultReasons: [AutoTestResultReasonShort], comment: String? = nil, duration: Int64? = nil, links: [TestResultLinkApiResult], attachments: [AttachmentApiResult], rerunCompletedCount: Int) {
         self.id = id
         self.name = name
+        self.autotestGlobalId = autotestGlobalId
         self.autotestExternalId = autotestExternalId
         self.autoTestTags = autoTestTags
         self.testRunId = testRunId
@@ -64,6 +67,7 @@ public struct TestResultShortResponse: Codable, JSONEncodable, Hashable {
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case id
         case name
+        case autotestGlobalId
         case autotestExternalId
         case autoTestTags
         case testRunId
@@ -85,6 +89,7 @@ public struct TestResultShortResponse: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
+        try container.encode(autotestGlobalId, forKey: .autotestGlobalId)
         try container.encodeIfPresent(autotestExternalId, forKey: .autotestExternalId)
         try container.encode(autoTestTags, forKey: .autoTestTags)
         try container.encode(testRunId, forKey: .testRunId)

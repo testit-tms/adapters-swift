@@ -16,6 +16,13 @@ enum Converter {
         return linkType
     }
 
+    static func layerToApiModel(from name: String?) -> LayerApiModel? {
+        guard let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return LayerApiModel(name: trimmed, source: .run)
+    }
+
     static func testResultToAutoTestCreateApiModel(result: TestResultCommon, projectId: UUID?) -> AutoTestCreateApiModel? {
 
         guard let uuidString = result.uuid,
@@ -35,6 +42,7 @@ enum Converter {
             title: result.title,
             description: result.description,
             isFlaky: false,
+            layer: layerToApiModel(from: result.layer),
             steps: convertSteps(result.getSteps()),
             setup: nil,
             teardown: nil,
@@ -74,6 +82,8 @@ enum Converter {
             title: result.title,
             description: result.description,
             isFlaky: isFlaky,
+            layer: layerToApiModel(from: result.layer),
+            resetLayer: false,
             steps: convertSteps(result.getSteps()),
             setup: [],
             teardown: [],
@@ -127,20 +137,21 @@ enum Converter {
     }
 
     static func autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: AutoTestApiResult) -> AutoTestUpdateApiModel? {
-        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: nil, isFlaky: nil, setup: nil, teardown: nil)
+        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: nil, isFlaky: nil, setup: nil, teardown: nil, layerName: nil)
     }
 
     static func autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: AutoTestApiResult,
                                                 setup: [AutoTestStepApiModel]?,
                                                 teardown: [AutoTestStepApiModel]?,
                                                 isFlaky: Bool?) -> AutoTestUpdateApiModel? {
-        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: nil, isFlaky: isFlaky, setup: setup, teardown: teardown)
+        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: nil, isFlaky: isFlaky, setup: setup, teardown: teardown, layerName: nil)
     }
 
     static func autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: AutoTestApiResult,
                                                 links: [LinkUpdateApiModel]?,
-                                                isFlaky: Bool?) -> AutoTestUpdateApiModel? {
-        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: links, isFlaky: isFlaky, setup: nil, teardown: nil)
+                                                isFlaky: Bool?,
+                                                layerName: String? = nil) -> AutoTestUpdateApiModel? {
+        return autoTestApiResultToAutoTestUpdateApiModel(autoTestApiResult: autoTestApiResult, links: links, isFlaky: isFlaky, setup: nil, teardown: nil, layerName: layerName)
     }
 
     static func autoTestStepApiResultToAutoTestStepApiModel(
@@ -184,7 +195,8 @@ enum Converter {
         links: [LinkUpdateApiModel]?,
         isFlaky: Bool?,
         setup: [AutoTestStepApiModel]?,
-        teardown: [AutoTestStepApiModel]?
+        teardown: [AutoTestStepApiModel]?,
+        layerName: String? = nil
     ) -> AutoTestUpdateApiModel? {
         // externalId and name are non-optional in AutoTestApiResult, so no need to conditionally bind them.
         // The guard statement is removed as there are no longer any optional values to check here
@@ -202,6 +214,8 @@ enum Converter {
             title: autoTestApiResult.title,
             description: autoTestApiResult.description,
             isFlaky: isFlaky,
+            layer: layerToApiModel(from: layerName),
+            resetLayer: false,
             steps: autoTestApiResult.steps?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
             setup: setup ?? autoTestApiResult.setup?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },
             teardown: teardown ?? autoTestApiResult.teardown?.compactMap { autoTestStepApiResultToAutoTestStepApiModel(autoTestStepApiResult: $0) },

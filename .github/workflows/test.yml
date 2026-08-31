@@ -1,7 +1,6 @@
-# warning - this run not take in account adapter changes on this branch at current implementation
-name: e2e tests _ not verify PR changes
+name: e2e tests
 
-run-name: "#${{ github.run_number }} test by ${{ github.triggering_actor }}"
+run-name: "#${{ github.run_number }} e2e (${{ github.head_ref || github.ref_name }}) by ${{ github.actor }}"
 on:
   pull_request:
     types: [opened, labeled, unlabeled, synchronize]
@@ -24,6 +23,7 @@ env:
   TMS_URL: ${{ secrets.TESTIT_URL }}
   TMS_CONFIG_FILE: ${{ github.workspace }}/tms.config.json
   TMS_OVERWRITE_EXPECTED: false
+  ADAPTERS_SWIFT_PATH: ${{ github.workspace }}
 jobs:
   test:
     name: ${{ matrix.project_name }}
@@ -41,8 +41,12 @@ jobs:
       TMS_PROJECT_ID: ${{ secrets[matrix.project_id] }}
       TMS_TEST_RUN_NAME: ${{ matrix.project_name }} TestRun
     steps:
-      - name: Checkout adapters-swift
+      - name: Checkout adapters-swift (current branch / PR head)
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          path: adapters-swift
 
       - name: Checkout api-validator-dotnet
         uses: actions/checkout@v4
@@ -57,19 +61,45 @@ jobs:
           repository: testit-tms/swift-examples
           path: swift-examples
 
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-   
-      - name: Setup python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Setup adapters-swift
+      - name: Verify adapters-swift revision
+        working-directory: adapters-swift
         run: |
+          echo "ADAPTERS_SWIFT_SHA=$(git rev-parse HEAD)"
+          echo "ADAPTERS_SWIFT_REF=$(git rev-parse --abbrev-ref HEAD)"
           swift build -v
+
+      - name: Link local adapters-swift into swift-examples
+        env:
+          DERIVED_DATA_PATH: ${{ github.workspace }}/.derivedData
+        run: |
+          chmod +x adapters-swift/.github/scripts/use-local-adapters-swift.sh
+          adapters-swift/.github/scripts/use-local-adapters-swift.sh \
+            "${{ github.workspace }}/adapters-swift" \
+            "${{ github.workspace }}/swift-examples"
+
+          rm -rf "${DERIVED_DATA_PATH}"
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/org.swift.swiftpm
+
+          xcodebuild -resolvePackageDependencies \
+            -project swift-examples/examples-swift.xcodeproj \
+            -scheme tests \
+            -destination 'platform=macOS' \
+            -derivedDataPath "${DERIVED_DATA_PATH}" \
+            2>&1 | tee resolve-packages.log
+
+          echo "--- Resolved packages ---"
+          sed -n '/Resolved source packages:/,$p' resolve-packages.log | head -20
+
+          if grep -q 'testit-tms/adapters-swift' resolve-packages.log; then
+            echo "ERROR: xcodebuild still resolved remote adapters-swift from GitHub." >&2
+            exit 1
+          fi
+
+          if grep -q 'testit-api-client' resolve-packages.log; then
+            echo "ERROR: transitive testit-api-client means published adapters-swift was used." >&2
+            exit 1
+          fi
 
       - name: Setup environment
         run: |
@@ -82,8 +112,10 @@ jobs:
           echo "TMS_TEST_RUN_ID=$(<${{ env.TEMP_FILE }})" >> $GITHUB_ENV
 
       - name: Test
+        env:
+          DERIVED_DATA_PATH: ${{ github.workspace }}/.derivedData
         run: |
-          export SYNC_STORAGE_VERSION=$(grep -o 'syncStorageReleaseVersion = "[^"]*"' Sources/SyncStorage/SyncStorageRunner.swift | cut -d'"' -f2)
+          export SYNC_STORAGE_VERSION=$(grep -o 'syncStorageReleaseVersion = "[^"]*"' adapters-swift/Sources/SyncStorage/SyncStorageRunner.swift | cut -d'"' -f2)
           export TMS_SYNC_STORAGE_VERBOSE=true
 
           mkdir -p .caches
@@ -98,7 +130,6 @@ jobs:
           curl -v http://127.0.0.1:49152/health || true
 
           cd swift-examples
-          # Create empty file and write required properties for testit
           cat > tests/testit.properties << EOF
           url=${{ env.TMS_URL }}
           privateToken=${{ env.TMS_PRIVATE_TOKEN }}
@@ -108,7 +139,11 @@ jobs:
           adapterMode=${{ env.TMS_ADAPTER_MODE }}
           certValidation=${{ env.TMS_CERT_VALIDATION }}
           EOF
-          xcodebuild test -scheme tests || true
+          xcodebuild test \
+            -project examples-swift.xcodeproj \
+            -scheme tests \
+            -destination 'platform=macOS' \
+            -derivedDataPath "${DERIVED_DATA_PATH}" || true
 
           sleep 1
 
@@ -123,10 +158,11 @@ jobs:
           dotnet test --configuration Debug --no-build --logger:"console;verbosity=detailed" api-validator-dotnet
 
       - name: Test Adapter Mode 2
+        env:
+          DERIVED_DATA_PATH: ${{ github.workspace }}/.derivedData
         run: |
           cd swift-examples
           
-          # Create empty file and write required properties for testit
           cat > tests/testit.properties << EOF
           url=${{ env.TMS_URL }}
           privateToken=${{ env.TMS_PRIVATE_TOKEN }}
@@ -135,11 +171,13 @@ jobs:
           adapterMode=2
           certValidation=${{ env.TMS_CERT_VALIDATION }}
           EOF
-          xcodebuild test -scheme tests || true
+          xcodebuild test \
+            -project examples-swift.xcodeproj \
+            -scheme tests \
+            -destination 'platform=macOS' \
+            -derivedDataPath "${DERIVED_DATA_PATH}" || true
 
-          # sleep 10
           curl -v http://127.0.0.1:49152/wait-completion || true
-          # cat ../service.log
 
       - name: Validate Again
         run: |
