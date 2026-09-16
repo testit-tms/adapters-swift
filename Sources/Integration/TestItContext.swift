@@ -48,7 +48,16 @@ public class TestItContextBuilder {
         return self
     }
 
+    public func WorkItemId(_ globalId: String?) -> TestItContextBuilder {
+        if let globalId = globalId {
+            context.workItemIds = [globalId]
+        }
+        return self
+    }
+
+    @available(*, deprecated, message: "Use WorkItemId with a single globalId instead.")
     public func WorkItems(_ workItemIds: [String]?) -> TestItContextBuilder {
+        print("WorkItems is deprecated. Use WorkItemId with a single globalId instead.")
         context.workItemIds = workItemIds
         return self
     }

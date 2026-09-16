@@ -298,7 +298,8 @@ TestItContextBuilder()
 
 Description of Metadata builder methods:
 
-- `WorkItemIds` - a method that links autotests with manual tests. Receives the array of manual tests' IDs
+- `WorkItemId` - a method that links an autotest with a manual test. Receives a single globalId
+- `WorkItems` - deprecated, use `WorkItemId` instead
 - `DisplayName` - internal autotest name (used in Test IT) (TODO)
 - `ExternalId` - unique internal autotest ID (used in Test IT)
 - `Title` - autotest name specified in the autotest card. If not specified, the name from the displayName method is used
