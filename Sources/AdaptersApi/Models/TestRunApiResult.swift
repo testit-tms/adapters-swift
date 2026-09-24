@@ -27,8 +27,22 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
     public var links: [LinkApiResult]
     /** Collection of tags associated with the test run */
     public var tags: [String]
+    /** Test run description (needed for round-trip update; adapters GET omits it on TMS 5.8) */
+    public var description: String?
+    /** Test run launch source (needed for round-trip update; adapters GET omits it on TMS 5.8) */
+    public var launchSource: String?
 
-    public init(id: UUID, name: String, stateName: TestRunState, status: TestStatusApiResult, attachments: [AttachmentApiResult], links: [LinkApiResult], tags: [String]) {
+    public init(
+        id: UUID,
+        name: String,
+        stateName: TestRunState,
+        status: TestStatusApiResult,
+        attachments: [AttachmentApiResult],
+        links: [LinkApiResult],
+        tags: [String],
+        description: String? = nil,
+        launchSource: String? = nil
+    ) {
         self.id = id
         self.name = name
         self.stateName = stateName
@@ -36,6 +50,8 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
         self.attachments = attachments
         self.links = links
         self.tags = tags
+        self.description = description
+        self.launchSource = launchSource
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -46,6 +62,8 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
         case attachments
         case links
         case tags
+        case description
+        case launchSource
     }
 
     // Encodable protocol methods
@@ -59,6 +77,7 @@ public struct TestRunApiResult: Codable, JSONEncodable, Hashable {
         try container.encode(attachments, forKey: .attachments)
         try container.encode(links, forKey: .links)
         try container.encode(tags, forKey: .tags)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(launchSource, forKey: .launchSource)
     }
 }
-

@@ -110,42 +110,76 @@ class TmsApiClient: ApiClient {
         Self.logger.debug("TmsApiClient: getTestRun...")
         lock.lock()
         defer { lock.unlock() }
-        
+
         guard let runUUID = UUID(uuidString: uuid) else {
              Self.logger.error("Cannot get test run: Invalid UUID format \"\(uuid)\"")
              throw TmsApiClientError.invalidUUIDFormat("Invalid Test Run UUID format")
         }
-        
+
+        // TMS 5.8: GET /adapters/testRuns/{id} omits description/launchSource and returns
+        // empty links/attachments. Read via v2; only merge fields are mapped.
+        return try getTestRunByIdV2(id: runUUID)
+    }
+
+    /// Temporary workaround until adapters GET returns links/attachments/description/launchSource.
+    private func getTestRunByIdV2(id: UUID) throws -> TestRunApiResult {
+        let urlString = AdaptersApiAPI.basePath + "/api/v2/testRuns/\(id.uuidString)"
+        guard let url = URL(string: urlString) else {
+            throw TmsApiClientError.invalidConfiguration("Invalid URL for v2 getTestRun: \(urlString)")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        for (key, value) in AdaptersApiAPI.customHeaders {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+
         let semaphore = DispatchSemaphore(value: 0)
         var operationError: Error?
-        var testRunResult: TestRunApiResult?
-        
-        _ = TestRunsAPI.adaptersTestRunsIdGet(id: runUUID) { data, error in
+        var responseData: Data?
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                Self.logger.error("Error getting test run: \(error.localizedDescription)")
+                Self.logger.error("Error getting test run via v2: \(error.localizedDescription)")
                 operationError = error
-            } else if let data = data {
-                testRunResult = data
+            } else if let http = response as? HTTPURLResponse {
+                if (200..<300).contains(http.statusCode) {
+                    responseData = data
+                } else {
+                    Self.logger.error("api/v2/testRuns/{id} HTTP \(http.statusCode)")
+                    operationError = TmsApiClientError.missingApiResponseData(
+                        "api/v2/testRuns/{id} HTTP \(http.statusCode)"
+                    )
+                }
             } else {
-                Self.logger.error("adaptersTestRunsIdGet returned no data and no error.")
-                operationError = TmsApiClientError.missingApiResponseData("adaptersTestRunsIdGet returned no data and no error")
+                operationError = TmsApiClientError.missingApiResponseData("api/v2/testRuns/{id} returned no HTTP response")
             }
             semaphore.signal()
-        }
-        
+        }.resume()
+
         semaphore.wait()
-        
+
         if let error = operationError {
-            Self.logger.error("Failed to get test run: \(error.localizedDescription)")
+            Self.logger.error("Failed to get test run via v2: \(error.localizedDescription)")
             throw error
         }
-        
-        guard let result = testRunResult else {
-            Self.logger.error("adaptersTestRunsIdGet response was nil after operation")
-            throw TmsApiClientError.missingApiResponseData("adaptersTestRunsIdGet response was nil after operation")
+
+        guard let data = responseData else {
+            Self.logger.error("api/v2/testRuns/{id} returned no data")
+            throw TmsApiClientError.missingApiResponseData("api/v2/testRuns/{id} returned no data")
         }
-        
-        return result
+
+        do {
+            let result = try Converter.v2TestRunPayloadToModel(data)
+            Self.logger.debug(
+                "Got test run via v2: id=\(result.id.uuidString), links=\(result.links.count), attachments=\(result.attachments.count), tags=\(result.tags.count)"
+            )
+            return result
+        } catch {
+            Self.logger.error("Failed to map v2 test run payload: \(error.localizedDescription)")
+            throw error
+        }
     }
 
     func updateTestRun(uuid: String, name: String?, tags: [String]?, links: [UpdateLinkApiModel]?) throws {
@@ -174,6 +208,8 @@ class TmsApiClient: ApiClient {
         let updateModel = UpdateEmptyTestRunApiModel(
             id: updatedTestRun.id,
             name: updatedTestRun.name,
+            description: updatedTestRun.description,
+            launchSource: updatedTestRun.launchSource,
             attachments: Converter.buildAssignAttachmentApiModels(updatedTestRun.attachments),
             links: mergedLinks,
             tags: mergedTags

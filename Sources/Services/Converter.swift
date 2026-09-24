@@ -445,6 +445,8 @@ enum Converter {
         return UpdateEmptyTestRunApiModel(
             id: testRun.id,
             name: testRun.name,
+            description: testRun.description,
+            launchSource: testRun.launchSource,
             attachments: buildAssignAttachmentApiModels(testRun.attachments),
             links: buildUpdateLinkApiModels(testRun.links),
             tags: testRun.tags
@@ -465,6 +467,108 @@ enum Converter {
                 url: link.url,
                 description: link.description,
                 type: link.type
+            )
+        }
+    }
+
+    /// Maps GET /api/v2/testRuns/{id} JSON to the fields needed for merge/update.
+    /// Extra payload (e.g. testResults) is ignored; tags may be strings or `{name}` objects.
+    static func v2TestRunPayloadToModel(_ data: Data) throws -> TestRunApiResult {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let idString = json["id"] as? String,
+              let id = UUID(uuidString: idString),
+              let name = json["name"] as? String
+        else {
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: [], debugDescription: "Invalid v2 test run payload")
+            )
+        }
+
+        let stateName = (json["stateName"] as? String).flatMap(TestRunState.init(rawValue:)) ?? .inProgress
+        let status = parseV2Status(json["status"]) ?? TestStatusApiResult(
+            id: UUID(),
+            type: .pending,
+            code: "UNKNOWN"
+        )
+
+        return TestRunApiResult(
+            id: id,
+            name: name,
+            stateName: stateName,
+            status: status,
+            attachments: parseV2Attachments(json["attachments"]),
+            links: parseV2Links(json["links"]),
+            tags: parseV2Tags(json["tags"]),
+            description: json["description"] as? String,
+            launchSource: json["launchSource"] as? String
+        )
+    }
+
+    private static func parseV2Status(_ value: Any?) -> TestStatusApiResult? {
+        guard let dict = value as? [String: Any],
+              let idString = dict["id"] as? String,
+              let id = UUID(uuidString: idString),
+              let typeRaw = dict["type"] as? String,
+              let type = TestStatusApiType(rawValue: typeRaw),
+              let code = dict["code"] as? String
+        else {
+            return nil
+        }
+        return TestStatusApiResult(id: id, type: type, code: code)
+    }
+
+    private static func parseV2Tags(_ value: Any?) -> [String] {
+        guard let items = value as? [Any] else { return [] }
+        return items.compactMap { item in
+            if let tag = item as? String, !tag.isEmpty {
+                return tag
+            }
+            if let dict = item as? [String: Any],
+               let name = dict["name"] as? String,
+               !name.isEmpty {
+                return name
+            }
+            return nil
+        }
+    }
+
+    private static func parseV2Links(_ value: Any?) -> [LinkApiResult] {
+        guard let items = value as? [[String: Any]] else { return [] }
+        return items.compactMap { item in
+            guard let url = item["url"] as? String, !url.isEmpty else { return nil }
+            let type = toApiLinkType(from: (item["type"] as? String) ?? defaultLinkType.rawValue)
+            let id = (item["id"] as? String).flatMap(UUID.init(uuidString:))
+            return LinkApiResult(
+                id: id,
+                title: item["title"] as? String,
+                url: url,
+                description: item["description"] as? String,
+                type: type
+            )
+        }
+    }
+
+    private static func parseV2Attachments(_ value: Any?) -> [AttachmentApiResult] {
+        guard let items = value as? [[String: Any]] else { return [] }
+        return items.compactMap { item in
+            guard let idString = item["id"] as? String,
+                  let id = UUID(uuidString: idString)
+            else {
+                return nil
+            }
+            // Only id is required for AssignAttachmentApiModel round-trip.
+            let size: Float
+            if let number = item["size"] as? NSNumber {
+                size = number.floatValue
+            } else {
+                size = 0
+            }
+            return AttachmentApiResult(
+                id: id,
+                fileId: item["fileId"] as? String ?? "",
+                type: item["type"] as? String ?? "",
+                size: size,
+                name: item["name"] as? String ?? ""
             )
         }
     }
