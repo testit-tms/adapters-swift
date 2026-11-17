@@ -48,7 +48,7 @@ private let defaultURLSession = URLSession(configuration: .default, delegate: se
 private var challengeHandlerStore = SynchronizedDictionary<Int, SyncStorageClientAPIChallengeHandler>()
 private var credentialStore = SynchronizedDictionary<Int, URLCredential>()
 
-open class URLSessionRequestBuilder<T>: RequestBuilder<T> {
+open class URLSessionRequestBuilder<T>: RequestBuilder<T>, @unchecked Sendable {
 
     public var taskDidReceiveChallenge: SyncStorageClientAPIChallengeHandler?
 

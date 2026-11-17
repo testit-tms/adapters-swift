@@ -248,7 +248,7 @@ class HtmlEscapeUtilsTests: XCTestCase {
         
         // Add labels with HTML
         model.labels = [
-            LabelApiModel(name: "<label>Label Name</label>", globalId: 1)
+            LabelApiModel(name: "<label>Label Name</label>")
         ]
         
         // Add links with HTML

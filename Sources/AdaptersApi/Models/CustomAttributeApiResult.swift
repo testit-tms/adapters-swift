@@ -14,7 +14,9 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
 
     /** Unique ID of the attribute */
     public var id: UUID
-    /** Collection of the attribute options      Available for attributes of type `options` and `multiple options` only */
+    /** Optional code identifier for the attribute */
+    public var code: String?
+    /** Collection of the attribute options   Available for attributes of type `options` and `multiple options` only */
     public var options: [CustomAttributeOptionApiResult]
     /** Type of the attribute */
     public var type: CustomAttributeType
@@ -28,9 +30,16 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
     public var isRequired: Bool
     /** Indicates if the attribute is available across all projects */
     public var isGlobal: Bool
+    /** Indicates if the attribute is read-only */
+    public var isReadOnly: Bool
+    /** Indicates if the attribute is system */
+    public var isSystem: Bool
+    /** Collection of the attribute targets   Defines where the attribute can be used (e.g., TestCases, AutoTestCases, TestPlans) */
+    public var targets: [String]
 
-    public init(id: UUID, options: [CustomAttributeOptionApiResult], type: CustomAttributeType, isDeleted: Bool, name: String, isEnabled: Bool, isRequired: Bool, isGlobal: Bool) {
+    public init(id: UUID, code: String? = nil, options: [CustomAttributeOptionApiResult], type: CustomAttributeType, isDeleted: Bool, name: String, isEnabled: Bool, isRequired: Bool, isGlobal: Bool, isReadOnly: Bool, isSystem: Bool, targets: [String]) {
         self.id = id
+        self.code = code
         self.options = options
         self.type = type
         self.isDeleted = isDeleted
@@ -38,10 +47,14 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
         self.isEnabled = isEnabled
         self.isRequired = isRequired
         self.isGlobal = isGlobal
+        self.isReadOnly = isReadOnly
+        self.isSystem = isSystem
+        self.targets = targets
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case id
+        case code
         case options
         case type
         case isDeleted
@@ -49,6 +62,9 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
         case isEnabled
         case isRequired
         case isGlobal
+        case isReadOnly
+        case isSystem
+        case targets
     }
 
     // Encodable protocol methods
@@ -56,6 +72,7 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
+        try container.encodeIfPresent(code, forKey: .code)
         try container.encode(options, forKey: .options)
         try container.encode(type, forKey: .type)
         try container.encode(isDeleted, forKey: .isDeleted)
@@ -63,6 +80,9 @@ public struct CustomAttributeApiResult: Codable, JSONEncodable, Hashable {
         try container.encode(isEnabled, forKey: .isEnabled)
         try container.encode(isRequired, forKey: .isRequired)
         try container.encode(isGlobal, forKey: .isGlobal)
+        try container.encode(isReadOnly, forKey: .isReadOnly)
+        try container.encode(isSystem, forKey: .isSystem)
+        try container.encode(targets, forKey: .targets)
     }
 }
 

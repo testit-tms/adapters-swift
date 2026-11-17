@@ -12,7 +12,7 @@ import AnyCodable
 
 public struct CreateEmptyTestRunApiModel: Codable, JSONEncodable, Hashable {
 
-    /** Project unique identifier                This property is to link test run with a project */
+    /** Project unique identifier              This property is to link test run with a project */
     public var projectId: UUID
     /** Test run name */
     public var name: String?

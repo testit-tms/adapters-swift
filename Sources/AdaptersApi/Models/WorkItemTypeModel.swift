@@ -14,4 +14,5 @@ public enum WorkItemTypeModel: String, Codable, CaseIterable {
     case testCases = "TestCases"
     case checkLists = "CheckLists"
     case sharedSteps = "SharedSteps"
+    case autoTestCases = "AutoTestCases"
 }

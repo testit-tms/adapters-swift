@@ -44,6 +44,8 @@ public struct CreateWorkItemApiModel: Codable, JSONEncodable, Hashable {
     public var iterations: [AssignIterationApiModel]?
     /** Set of automated tests linked to the work item */
     public var autoTests: [AutoTestIdModel]?
+    /** Set of automated test cases linked to the work item */
+    public var autoTestCases: [AssignAutoTestCaseIdApiModel]?
     /** Set of files attached to the work item */
     public var attachments: [AssignAttachmentApiModel]?
     /** Set of links related to the work item */
@@ -51,7 +53,7 @@ public struct CreateWorkItemApiModel: Codable, JSONEncodable, Hashable {
     /** Set of parameter keys associated with the work item */
     public var parameters: [WorkItemParameterKeyApiModel]?
 
-    public init(projectId: UUID, sectionId: UUID? = nil, name: String, description: String? = nil, entityTypeName: WorkItemEntityTypeApiModel, duration: Int64, state: WorkItemStateApiModel, priority: WorkItemPriorityApiModel, attributes: [String: AnyCodable]? = nil, tags: [TagModel]? = nil, preconditionSteps: [CreateStepApiModel]? = nil, steps: [CreateStepApiModel]? = nil, postconditionSteps: [CreateStepApiModel]? = nil, iterations: [AssignIterationApiModel]? = nil, autoTests: [AutoTestIdModel]? = nil, attachments: [AssignAttachmentApiModel]? = nil, links: [CreateLinkApiModel]? = nil, parameters: [WorkItemParameterKeyApiModel]? = nil) {
+    public init(projectId: UUID, sectionId: UUID? = nil, name: String, description: String? = nil, entityTypeName: WorkItemEntityTypeApiModel, duration: Int64, state: WorkItemStateApiModel, priority: WorkItemPriorityApiModel, attributes: [String: AnyCodable]? = nil, tags: [TagModel]? = nil, preconditionSteps: [CreateStepApiModel]? = nil, steps: [CreateStepApiModel]? = nil, postconditionSteps: [CreateStepApiModel]? = nil, iterations: [AssignIterationApiModel]? = nil, autoTests: [AutoTestIdModel]? = nil, autoTestCases: [AssignAutoTestCaseIdApiModel]? = nil, attachments: [AssignAttachmentApiModel]? = nil, links: [CreateLinkApiModel]? = nil, parameters: [WorkItemParameterKeyApiModel]? = nil) {
         self.projectId = projectId
         self.sectionId = sectionId
         self.name = name
@@ -67,6 +69,7 @@ public struct CreateWorkItemApiModel: Codable, JSONEncodable, Hashable {
         self.postconditionSteps = postconditionSteps
         self.iterations = iterations
         self.autoTests = autoTests
+        self.autoTestCases = autoTestCases
         self.attachments = attachments
         self.links = links
         self.parameters = parameters
@@ -88,6 +91,7 @@ public struct CreateWorkItemApiModel: Codable, JSONEncodable, Hashable {
         case postconditionSteps
         case iterations
         case autoTests
+        case autoTestCases
         case attachments
         case links
         case parameters
@@ -112,6 +116,7 @@ public struct CreateWorkItemApiModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(postconditionSteps, forKey: .postconditionSteps)
         try container.encodeIfPresent(iterations, forKey: .iterations)
         try container.encodeIfPresent(autoTests, forKey: .autoTests)
+        try container.encodeIfPresent(autoTestCases, forKey: .autoTestCases)
         try container.encodeIfPresent(attachments, forKey: .attachments)
         try container.encodeIfPresent(links, forKey: .links)
         try container.encodeIfPresent(parameters, forKey: .parameters)

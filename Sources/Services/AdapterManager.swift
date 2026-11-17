@@ -167,7 +167,8 @@ class AdapterManager {
         do {
             let testRun = try self.client.getTestRun(uuid: testRunId)
 
-            if testRun.stateName != .completed {
+            let isActive = testRun.status.type == .pending || testRun.status.type == .inProgress
+            if isActive {
                 // try self.client.completeTestRun(uuid: testRunId)
                 Self.logger.info("Completed test run: \(testRunId)")
             } else {

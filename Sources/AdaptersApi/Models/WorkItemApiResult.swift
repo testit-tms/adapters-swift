@@ -51,6 +51,8 @@ public struct WorkItemApiResult: Codable, JSONEncodable, Hashable {
     public var iterations: [IterationModel]
     /** Automated tests associated with the work item */
     public var autoTests: [AutoTestModel]
+    /** Set of automated test cases linked to the work item */
+    public var autoTestCases: [AutoTestCaseApiModel]
     /** Files attached to the work item */
     public var attachments: [AttachmentModel]
     /** Set of links related to the work item */
@@ -60,7 +62,7 @@ public struct WorkItemApiResult: Codable, JSONEncodable, Hashable {
     /** Indicates whether the work item is marked as deleted */
     public var isDeleted: Bool
 
-    public init(id: UUID, globalId: Int64, projectId: UUID, sectionId: UUID, name: String, description: String? = nil, entityTypeName: WorkItemEntityTypeApiModel, duration: Int, state: WorkItemStateApiModel, priority: WorkItemPriorityApiModel, isAutomated: Bool, attributes: [String: AnyCodable], tags: [TagModel], sectionPreconditionSteps: [StepModel], sectionPostconditionSteps: [StepModel], preconditionSteps: [StepModel], steps: [StepModel], postconditionSteps: [StepModel], iterations: [IterationModel], autoTests: [AutoTestModel], attachments: [AttachmentModel], links: [LinkModel], parameters: [WorkItemParameterKeyApiResult], isDeleted: Bool) {
+    public init(id: UUID, globalId: Int64, projectId: UUID, sectionId: UUID, name: String, description: String? = nil, entityTypeName: WorkItemEntityTypeApiModel, duration: Int, state: WorkItemStateApiModel, priority: WorkItemPriorityApiModel, isAutomated: Bool, attributes: [String: AnyCodable], tags: [TagModel], sectionPreconditionSteps: [StepModel], sectionPostconditionSteps: [StepModel], preconditionSteps: [StepModel], steps: [StepModel], postconditionSteps: [StepModel], iterations: [IterationModel], autoTests: [AutoTestModel], autoTestCases: [AutoTestCaseApiModel], attachments: [AttachmentModel], links: [LinkModel], parameters: [WorkItemParameterKeyApiResult], isDeleted: Bool) {
         self.id = id
         self.globalId = globalId
         self.projectId = projectId
@@ -81,6 +83,7 @@ public struct WorkItemApiResult: Codable, JSONEncodable, Hashable {
         self.postconditionSteps = postconditionSteps
         self.iterations = iterations
         self.autoTests = autoTests
+        self.autoTestCases = autoTestCases
         self.attachments = attachments
         self.links = links
         self.parameters = parameters
@@ -108,6 +111,7 @@ public struct WorkItemApiResult: Codable, JSONEncodable, Hashable {
         case postconditionSteps
         case iterations
         case autoTests
+        case autoTestCases
         case attachments
         case links
         case parameters
@@ -138,6 +142,7 @@ public struct WorkItemApiResult: Codable, JSONEncodable, Hashable {
         try container.encode(postconditionSteps, forKey: .postconditionSteps)
         try container.encode(iterations, forKey: .iterations)
         try container.encode(autoTests, forKey: .autoTests)
+        try container.encode(autoTestCases, forKey: .autoTestCases)
         try container.encode(attachments, forKey: .attachments)
         try container.encode(links, forKey: .links)
         try container.encode(parameters, forKey: .parameters)

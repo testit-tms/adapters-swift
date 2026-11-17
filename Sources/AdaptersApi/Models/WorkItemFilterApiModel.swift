@@ -26,6 +26,8 @@ public struct WorkItemFilterApiModel: Codable, JSONEncodable, Hashable {
     static let tagsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     static let excludeTagsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     static let autoTestIdsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
+    static let layersRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
+    static let layerSourcesRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     /** Name or identifier (UUID) of work item */
     public var nameOrId: String?
     /** Collection of identifiers of work items which need to be included in result regardless of filtering */
@@ -64,8 +66,14 @@ public struct WorkItemFilterApiModel: Codable, JSONEncodable, Hashable {
     public var excludeTags: Set<String>?
     /** Collection of identifiers of linked autotests */
     public var autoTestIds: Set<UUID>?
+    /** Specifies auto test case layers to search for */
+    public var layers: Set<String>?
+    /** Specifies list of auto test case layer sources to search for */
+    public var layerSources: Set<LayerSource>?
+    /** External identifier of the work item */
+    public var externalId: String?
 
-    public init(nameOrId: String? = nil, includeIds: Set<UUID>? = nil, excludeIds: Set<UUID>? = nil, projectIds: Set<UUID>? = nil, name: String? = nil, ids: Set<UUID>? = nil, globalIds: Set<Int64>? = nil, attributes: [String: Set<String>]? = nil, isDeleted: Bool? = nil, sectionIds: Set<UUID>? = nil, states: Set<WorkItemStates>? = nil, priorities: Set<WorkItemPriorityModel>? = nil, sourceTypes: Set<WorkItemSourceTypeModel>? = nil, types: Set<WorkItemTypeModel>? = nil, duration: Int32RangeSelectorModel? = nil, isAutomated: Bool? = nil, tags: Set<String>? = nil, excludeTags: Set<String>? = nil, autoTestIds: Set<UUID>? = nil) {
+    public init(nameOrId: String? = nil, includeIds: Set<UUID>? = nil, excludeIds: Set<UUID>? = nil, projectIds: Set<UUID>? = nil, name: String? = nil, ids: Set<UUID>? = nil, globalIds: Set<Int64>? = nil, attributes: [String: Set<String>]? = nil, isDeleted: Bool? = nil, sectionIds: Set<UUID>? = nil, states: Set<WorkItemStates>? = nil, priorities: Set<WorkItemPriorityModel>? = nil, sourceTypes: Set<WorkItemSourceTypeModel>? = nil, types: Set<WorkItemTypeModel>? = nil, duration: Int32RangeSelectorModel? = nil, isAutomated: Bool? = nil, tags: Set<String>? = nil, excludeTags: Set<String>? = nil, autoTestIds: Set<UUID>? = nil, layers: Set<String>? = nil, layerSources: Set<LayerSource>? = nil, externalId: String? = nil) {
         self.nameOrId = nameOrId
         self.includeIds = includeIds
         self.excludeIds = excludeIds
@@ -85,6 +93,9 @@ public struct WorkItemFilterApiModel: Codable, JSONEncodable, Hashable {
         self.tags = tags
         self.excludeTags = excludeTags
         self.autoTestIds = autoTestIds
+        self.layers = layers
+        self.layerSources = layerSources
+        self.externalId = externalId
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -107,6 +118,9 @@ public struct WorkItemFilterApiModel: Codable, JSONEncodable, Hashable {
         case tags
         case excludeTags
         case autoTestIds
+        case layers
+        case layerSources
+        case externalId
     }
 
     // Encodable protocol methods
@@ -132,6 +146,9 @@ public struct WorkItemFilterApiModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(tags, forKey: .tags)
         try container.encodeIfPresent(excludeTags, forKey: .excludeTags)
         try container.encodeIfPresent(autoTestIds, forKey: .autoTestIds)
+        try container.encodeIfPresent(layers, forKey: .layers)
+        try container.encodeIfPresent(layerSources, forKey: .layerSources)
+        try container.encodeIfPresent(externalId, forKey: .externalId)
     }
 }
 

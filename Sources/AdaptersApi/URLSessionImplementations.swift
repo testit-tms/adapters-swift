@@ -64,7 +64,7 @@ private var challengeHandlerStore = SynchronizedDictionary<Int, AdaptersApiAPICh
 // Store current URLCredential for every URLSessionTask
 private var credentialStore = SynchronizedDictionary<Int, URLCredential>()
 
-open class URLSessionRequestBuilder<T>: RequestBuilder<T> {
+open class URLSessionRequestBuilder<T>: RequestBuilder<T>, @unchecked Sendable {
 
     /**
      May be assigned if you want to control the authentication challenges.

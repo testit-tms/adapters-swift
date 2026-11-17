@@ -252,7 +252,7 @@ enum Converter {
             logger.error("Error: Missing required fields (itemStatus, uuid, configurationId) or invalid status/uuid/configId in TestResultCommon for AutoTestResultsForTestRunModel conversion.")
             return nil
         }
-        var statusType = mapStatusType(status: itemStatusValue)
+        let statusType = mapStatusType(status: itemStatusValue)
 
         let throwable = result.throwable
         let message = throwable?.localizedDescription ?? result.message // Get error description
@@ -391,14 +391,14 @@ enum Converter {
 
     static func labelsConvert(_ labels: [LabelShortModel]) -> [LabelApiModel] {
         return labels.map { label in
-            LabelApiModel(name: label.name, globalId: label.globalId)
+            LabelApiModel(name: label.name)
         }
     }
 
     static func labelsPostConvert(_ labels: [Label]) -> [LabelApiModel] {
          return labels.compactMap { label -> LabelApiModel? in
             guard let name = label.name else { return nil }
-            return LabelApiModel(name: name, globalId: 0)
+            return LabelApiModel(name: name)
         }
     }
 
@@ -477,7 +477,9 @@ enum Converter {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let idString = json["id"] as? String,
               let id = UUID(uuidString: idString),
-              let name = json["name"] as? String
+              let name = json["name"] as? String,
+              let projectIdString = json["projectId"] as? String,
+              let projectId = UUID(uuidString: projectIdString)
         else {
             throw DecodingError.dataCorrupted(
                 .init(codingPath: [], debugDescription: "Invalid v2 test run payload")
@@ -494,13 +496,14 @@ enum Converter {
         return TestRunApiResult(
             id: id,
             name: name,
+            description: json["description"] as? String,
+            launchSource: json["launchSource"] as? String,
+            projectId: projectId,
             stateName: stateName,
             status: status,
             attachments: parseV2Attachments(json["attachments"]),
             links: parseV2Links(json["links"]),
-            tags: parseV2Tags(json["tags"]),
-            description: json["description"] as? String,
-            launchSource: json["launchSource"] as? String
+            tags: parseV2Tags(json["tags"])
         )
     }
 
@@ -584,14 +587,6 @@ enum Converter {
     }
 }
 
-// Extend ItemStatus to provide the 'value' property used in Kotlin code (assuming it maps to rawValue)
 extension ItemStatus {
-    var value: String? {
-        // This assumes ItemStatus is a RawRepresentable enum (like String)
-        // Adjust if the actual ItemStatus structure is different.
-        if let raw = self as? (any RawRepresentable) {
-            return raw.rawValue as? String
-        }
-        return nil
-    }
+    var value: String? { rawValue }
 }

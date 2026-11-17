@@ -32,6 +32,8 @@ public struct AutoTestCreateApiModel: Codable, JSONEncodable, Hashable {
     public var description: String?
     /** Indicates if the autotest is marked as flaky */
     public var isFlaky: Bool?
+    /** Layer of the autotest. Assigns layer by rules if omitted. */
+    public var layer: LayerApiModel?
     /** Collection of the autotest steps */
     public var steps: [AutoTestStepApiModel]?
     /** Collection of the autotest setup steps */
@@ -47,7 +49,7 @@ public struct AutoTestCreateApiModel: Codable, JSONEncodable, Hashable {
     /** Collection of the autotest tags */
     public var tags: [String]?
 
-    public init(projectId: UUID, externalId: String, externalKey: String? = nil, name: String, namespace: String? = nil, classname: String? = nil, title: String? = nil, description: String? = nil, isFlaky: Bool? = nil, steps: [AutoTestStepApiModel]? = nil, setup: [AutoTestStepApiModel]? = nil, teardown: [AutoTestStepApiModel]? = nil, shouldCreateWorkItem: Bool? = nil, labels: [LabelApiModel]? = nil, links: [LinkCreateApiModel]? = nil, tags: [String]? = nil) {
+    public init(projectId: UUID, externalId: String, externalKey: String? = nil, name: String, namespace: String? = nil, classname: String? = nil, title: String? = nil, description: String? = nil, isFlaky: Bool? = nil, layer: LayerApiModel? = nil, steps: [AutoTestStepApiModel]? = nil, setup: [AutoTestStepApiModel]? = nil, teardown: [AutoTestStepApiModel]? = nil, shouldCreateWorkItem: Bool? = nil, labels: [LabelApiModel]? = nil, links: [LinkCreateApiModel]? = nil, tags: [String]? = nil) {
         self.projectId = projectId
         self.externalId = externalId
         self.externalKey = externalKey
@@ -57,6 +59,7 @@ public struct AutoTestCreateApiModel: Codable, JSONEncodable, Hashable {
         self.title = title
         self.description = description
         self.isFlaky = isFlaky
+        self.layer = layer
         self.steps = steps
         self.setup = setup
         self.teardown = teardown
@@ -76,6 +79,7 @@ public struct AutoTestCreateApiModel: Codable, JSONEncodable, Hashable {
         case title
         case description
         case isFlaky
+        case layer
         case steps
         case setup
         case teardown
@@ -98,6 +102,7 @@ public struct AutoTestCreateApiModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(title, forKey: .title)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(isFlaky, forKey: .isFlaky)
+        try container.encodeIfPresent(layer, forKey: .layer)
         try container.encodeIfPresent(steps, forKey: .steps)
         try container.encodeIfPresent(setup, forKey: .setup)
         try container.encodeIfPresent(teardown, forKey: .teardown)

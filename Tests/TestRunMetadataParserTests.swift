@@ -85,12 +85,14 @@ final class TestRunMetadataParserTests: XCTestCase {
         let linkId = UUID()
         let statusId = UUID()
         let runId = UUID()
+        let projectId = UUID()
         let json = """
         {
           "id": "\(runId.uuidString)",
           "name": "TestRun_2026",
           "description": "existing description",
           "launchSource": "Test IT",
+          "projectId": "\(projectId.uuidString)",
           "stateName": "InProgress",
           "status": {
             "id": "\(statusId.uuidString)",
@@ -123,6 +125,7 @@ final class TestRunMetadataParserTests: XCTestCase {
         let model = try Converter.v2TestRunPayloadToModel(json)
 
         XCTAssertEqual(model.id, runId)
+        XCTAssertEqual(model.projectId, projectId)
         XCTAssertEqual(model.name, "TestRun_2026")
         XCTAssertEqual(model.description, "existing description")
         XCTAssertEqual(model.launchSource, "Test IT")

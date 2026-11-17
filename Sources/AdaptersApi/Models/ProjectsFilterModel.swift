@@ -23,13 +23,13 @@ public struct ProjectsFilterModel: Codable, JSONEncodable, Hashable {
     /** Specifies a project deleted status to search for */
     public var isDeleted: Bool?
     /** Specifies a project range of test cases count to search for */
-    public var testCasesCount: Int32RangeSelectorModel?
+    public var testCasesCount: Int64RangeSelectorModel?
     /** Specifies a project range of checklists count to search for */
-    public var checklistsCount: Int32RangeSelectorModel?
+    public var checklistsCount: Int64RangeSelectorModel?
     /** Specifies a project range of shared steps count to search for */
-    public var sharedStepsCount: Int32RangeSelectorModel?
+    public var sharedStepsCount: Int64RangeSelectorModel?
     /** Specifies a project range of autotests count to search for */
-    public var autotestsCount: Int32RangeSelectorModel?
+    public var autotestsCount: Int64RangeSelectorModel?
     /** Specifies a project global IDs to search for */
     public var globalIds: Set<Int64>?
     /** Specifies a project range of creation date to search for */
@@ -39,7 +39,7 @@ public struct ProjectsFilterModel: Codable, JSONEncodable, Hashable {
     /** Collection of project types to search for */
     public var types: Set<ProjectTypeModel>?
 
-    public init(name: String? = nil, isFavorite: Bool? = nil, isDeleted: Bool? = nil, testCasesCount: Int32RangeSelectorModel? = nil, checklistsCount: Int32RangeSelectorModel? = nil, sharedStepsCount: Int32RangeSelectorModel? = nil, autotestsCount: Int32RangeSelectorModel? = nil, globalIds: Set<Int64>? = nil, createdDate: DateTimeRangeSelectorModel? = nil, createdByIds: Set<UUID>? = nil, types: Set<ProjectTypeModel>? = nil) {
+    public init(name: String? = nil, isFavorite: Bool? = nil, isDeleted: Bool? = nil, testCasesCount: Int64RangeSelectorModel? = nil, checklistsCount: Int64RangeSelectorModel? = nil, sharedStepsCount: Int64RangeSelectorModel? = nil, autotestsCount: Int64RangeSelectorModel? = nil, globalIds: Set<Int64>? = nil, createdDate: DateTimeRangeSelectorModel? = nil, createdByIds: Set<UUID>? = nil, types: Set<ProjectTypeModel>? = nil) {
         self.name = name
         self.isFavorite = isFavorite
         self.isDeleted = isDeleted

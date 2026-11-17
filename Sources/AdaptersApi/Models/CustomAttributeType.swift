@@ -17,4 +17,5 @@ public enum CustomAttributeType: String, Codable, CaseIterable {
     case user = "user"
     case multipleoptions = "multipleOptions"
     case checkbox = "checkbox"
+    case numeric = "numeric"
 }

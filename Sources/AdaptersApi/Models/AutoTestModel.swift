@@ -45,6 +45,8 @@ public struct AutoTestModel: Codable, JSONEncodable, Hashable {
     public var lastTestResultStatus: TestStatusModel?
     /** Stability percentage of the autotest */
     public var stabilityPercentage: Int?
+    /** Auto test case linked with the autotest */
+    public var autoTestCase: AutoTestCaseModel?
     /** External ID of the autotest */
     public var externalId: String
     /** Collection of the autotest links */
@@ -74,7 +76,7 @@ public struct AutoTestModel: Codable, JSONEncodable, Hashable {
     /** External key of the autotest */
     public var externalKey: String?
 
-    public init(globalId: Int64, isDeleted: Bool, mustBeApproved: Bool, id: UUID, createdDate: Date, modifiedDate: Date? = nil, createdById: UUID, modifiedById: UUID? = nil, lastTestRunId: UUID? = nil, lastTestRunName: String? = nil, lastTestResultId: UUID? = nil, lastTestResultConfiguration: ConfigurationShortModel? = nil, lastTestResultOutcome: String? = nil, lastTestResultStatus: TestStatusModel? = nil, stabilityPercentage: Int? = nil, externalId: String, links: [LinkPutModel]? = nil, projectId: UUID, name: String, namespace: String? = nil, classname: String? = nil, steps: [AutoTestStepModel]? = nil, setup: [AutoTestStepModel]? = nil, teardown: [AutoTestStepModel]? = nil, title: String? = nil, description: String? = nil, labels: [LabelShortModel]? = nil, isFlaky: Bool? = nil, externalKey: String? = nil) {
+    public init(globalId: Int64, isDeleted: Bool, mustBeApproved: Bool, id: UUID, createdDate: Date, modifiedDate: Date? = nil, createdById: UUID, modifiedById: UUID? = nil, lastTestRunId: UUID? = nil, lastTestRunName: String? = nil, lastTestResultId: UUID? = nil, lastTestResultConfiguration: ConfigurationShortModel? = nil, lastTestResultOutcome: String? = nil, lastTestResultStatus: TestStatusModel? = nil, stabilityPercentage: Int? = nil, autoTestCase: AutoTestCaseModel? = nil, externalId: String, links: [LinkPutModel]? = nil, projectId: UUID, name: String, namespace: String? = nil, classname: String? = nil, steps: [AutoTestStepModel]? = nil, setup: [AutoTestStepModel]? = nil, teardown: [AutoTestStepModel]? = nil, title: String? = nil, description: String? = nil, labels: [LabelShortModel]? = nil, isFlaky: Bool? = nil, externalKey: String? = nil) {
         self.globalId = globalId
         self.isDeleted = isDeleted
         self.mustBeApproved = mustBeApproved
@@ -90,6 +92,7 @@ public struct AutoTestModel: Codable, JSONEncodable, Hashable {
         self.lastTestResultOutcome = lastTestResultOutcome
         self.lastTestResultStatus = lastTestResultStatus
         self.stabilityPercentage = stabilityPercentage
+        self.autoTestCase = autoTestCase
         self.externalId = externalId
         self.links = links
         self.projectId = projectId
@@ -122,6 +125,7 @@ public struct AutoTestModel: Codable, JSONEncodable, Hashable {
         case lastTestResultOutcome
         case lastTestResultStatus
         case stabilityPercentage
+        case autoTestCase
         case externalId
         case links
         case projectId
@@ -157,6 +161,7 @@ public struct AutoTestModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(lastTestResultOutcome, forKey: .lastTestResultOutcome)
         try container.encodeIfPresent(lastTestResultStatus, forKey: .lastTestResultStatus)
         try container.encodeIfPresent(stabilityPercentage, forKey: .stabilityPercentage)
+        try container.encodeIfPresent(autoTestCase, forKey: .autoTestCase)
         try container.encode(externalId, forKey: .externalId)
         try container.encodeIfPresent(links, forKey: .links)
         try container.encode(projectId, forKey: .projectId)

@@ -15,7 +15,7 @@ public struct CustomAttributePutModel: Codable, JSONEncodable, Hashable {
     static let nameRule = StringRule(minLength: 0, maxLength: 255, pattern: nil)
     /** Unique ID of the attribute */
     public var id: UUID
-    /** Collection of the attribute options      Available for attributes of type `options` and `multiple options` only */
+    /** Collection of the attribute options   Available for attributes of type `options` and `multiple options` only */
     public var options: [CustomAttributeOptionModel]?
     /** Type of the attribute */
     public var type: CustomAttributeTypesEnum
