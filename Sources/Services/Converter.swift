@@ -267,7 +267,7 @@ enum Converter {
             logger.error("Error: Missing required fields (itemStatus, uuid, configurationId) or invalid status/uuid/configId in TestResultCommon for AutoTestResultsForTestRunModel conversion.")
             return nil
         }
-        var statusType = mapStatusType(status: itemStatusValue)
+        let statusType = mapStatusType(status: itemStatusValue)
 
         let throwable = result.throwable
         let message = throwable?.localizedDescription ?? result.message // Get error description
@@ -495,14 +495,6 @@ enum Converter {
     }
 }
 
-// Extend ItemStatus to provide the 'value' property used in Kotlin code (assuming it maps to rawValue)
 extension ItemStatus {
-    var value: String? {
-        // This assumes ItemStatus is a RawRepresentable enum (like String)
-        // Adjust if the actual ItemStatus structure is different.
-        if let raw = self as? (any RawRepresentable) {
-            return raw.rawValue as? String
-        }
-        return nil
-    }
+    var value: String? { rawValue }
 }
