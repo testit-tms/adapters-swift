@@ -135,7 +135,7 @@ class HttpWriter: Writer {
             }
 
             if configuration.automaticUpdationLinksToTestCases {
-                try client.unlinkAutoTestToWorkItem(id: autoTestId, workItemId: linkedWorkItemId.uuidString) // Convert UUID to String here as well
+                _ = try client.unlinkAutoTestToWorkItem(id: autoTestId, workItemId: linkedWorkItemId.uuidString)
             }
         }
 
@@ -182,12 +182,11 @@ class HttpWriter: Writer {
     }
 
     func writeTests(_ container: MainContainer) { // For MainContainer
-        do {
-            Self.logger.warning("HttpWriter.writeTests started...")
-            let beforeAllFixtures = Converter.convertFixture(fixtures: container.beforeMethods, parentUuid: nil)
-            let afterAllFixtures = Converter.convertFixture(fixtures: container.afterMethods, parentUuid: nil)
-            let beforeResultAll = Converter.convertResultFixture(fixtures: container.beforeMethods, parentUuid: nil)
-            let afterResultAll = Converter.convertResultFixture(fixtures: container.afterMethods, parentUuid: nil)
+        Self.logger.warning("HttpWriter.writeTests started...")
+        let beforeAllFixtures = Converter.convertFixture(fixtures: container.beforeMethods, parentUuid: nil)
+        let afterAllFixtures = Converter.convertFixture(fixtures: container.afterMethods, parentUuid: nil)
+        let beforeResultAll = Converter.convertResultFixture(fixtures: container.beforeMethods, parentUuid: nil)
+        let afterResultAll = Converter.convertResultFixture(fixtures: container.afterMethods, parentUuid: nil)
 
             for classUuidString in container.children {
                 // let classUuid = UUID(uuidString: classUuidString)
@@ -220,9 +219,7 @@ class HttpWriter: Writer {
                                 return
                             }
                             let newAutoTestCreateApiModel = Converter.testResultToAutoTestCreateApiModel(result: testResult!, projectId: projectId)
-                            // Assuming createAutoTest returns the ID of the created autotest (String or UUID)
-                            
-                            let createdAutoTestIdString = try! client.createAutoTest(model: newAutoTestCreateApiModel!)
+                            _ = try! client.createAutoTest(model: newAutoTestCreateApiModel!)
                             autoTestApiResult = try client.getAutoTestByExternalId(externalId: testResult!.externalId)
                         }
 
@@ -293,9 +290,6 @@ class HttpWriter: Writer {
                     }
                 }
             }
-        } catch {
-            Self.logger.error("Error during MainContainer (writeTests) processing: \(error.localizedDescription)")
-        }
     }
 
     // Assuming AttachmentPutModelAutoTestStepResultsModel is the Swift equivalent for the model used in Kotlin

@@ -48,7 +48,7 @@ private let defaultURLSession = URLSession(configuration: .default, delegate: se
 private var challengeHandlerStore = SynchronizedDictionary<Int, SyncStorageClientAPIChallengeHandler>()
 private var credentialStore = SynchronizedDictionary<Int, URLCredential>()
 
-open class URLSessionRequestBuilder<T>: RequestBuilder<T> {
+open class URLSessionRequestBuilder<T>: RequestBuilder<T>, @unchecked Sendable {
 
     public var taskDidReceiveChallenge: SyncStorageClientAPIChallengeHandler?
 
@@ -224,7 +224,7 @@ open class URLSessionRequestBuilder<T>: RequestBuilder<T> {
     }
 }
 
-open class URLSessionDecodableRequestBuilder<T: Decodable>: URLSessionRequestBuilder<T> {
+open class URLSessionDecodableRequestBuilder<T: Decodable>: URLSessionRequestBuilder<T>, @unchecked Sendable {
     override fileprivate func processRequestResponse(urlRequest: URLRequest, data: Data?, response: URLResponse?, error: Error?, completion: @escaping (_ result: Swift.Result<Response<T>, ErrorResponse>) -> Void) {
         if let error = error {
             completion(.failure(ErrorResponse.error(-1, data, response, error)))

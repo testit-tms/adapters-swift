@@ -318,7 +318,7 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
         self.logger.info("Test case did finish: \(testCase.name)")
         let finishTime = Date() // Fix time of test finish
 
-        waitForAsyncTask {
+        let success = waitForAsyncTask {
             if let strongWriter = self.writer {
                 print("[TestItAdapter] Writer available, processing test finish...")
                 let fixtureService = strongWriter.fixtureService
@@ -346,6 +346,7 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
             self.currentFixtureIssues = []
             self.currentTestCaseName = nil
         }
+        self.logger.info("testCaseDidFinish - onTestDidFinish completion success: \(success)")
     }
 
     // This method will be called for each registered XCTIssue
@@ -357,11 +358,9 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
         // self.currentTestIssues.append(issue) // Remove old addition
 
         let context: String
-        var isFixtureFailure = false
 
         if let currentlyInSetUp = self.currentTestCaseInSetUp, currentlyInSetUp === testCase {
             context = "setUp"
-            isFixtureFailure = true
             self.logger.info("Issue recorded during setUp of \(testCase.name): \(issue.compactDescription)")
             self.currentFixtureIssues.append(issue) // Add to fixtureIssues
             Task { // Async call, to not block testCase(_:didRecord:)
@@ -369,7 +368,6 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
             }
         } else if let currentlyInTearDown = self.currentTestCaseInTearDown, currentlyInTearDown === testCase {
             context = "tearDown"
-            isFixtureFailure = true
             self.logger.info("Issue recorded during tearDown of \(testCase.name): \(issue.compactDescription)")
             self.currentFixtureIssues.append(issue) // Add to fixtureIssues
             Task { // Async call
@@ -380,20 +378,19 @@ class OverallLifecycleObserver: NSObject, XCTestObservation {
             self.currentTestBodyIssues.append(issue) // Add to testBodyIssues
             self.logger.info("Issue recorded in test body of \(testCase.name) (or outside specific setUp/tearDown context): \(issue.compactDescription)")
         }
-
-        // Further processing of isFixtureFailure can be here or in writer
     }
 
     // not called on failing assertions
     func testCase(_ testCase: XCTestCase, didFailWith description: String, inFile filePath: String?, atLine lineNumber: Int) {
         self.logger.info("Test case FAILED: \(testCase.name) - \(description)")
-        waitForAsyncTask {
+        let success = waitForAsyncTask {
             if let strongWriter = self.writer {
                 await strongWriter.onTestFailed(for: testCase)
             } else {
                 self.logger.error("ERROR from testCaseDidFinish - Writer is nil, cannot call onTestFailed.")
             }
         }
+        self.logger.info("testCase didFailWith - onTestFailed completion success: \(success)")
     }
 
     func onBeforeSetup(testCase: XCTestCase) {
